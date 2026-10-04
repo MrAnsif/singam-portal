@@ -10,7 +10,7 @@ export async function requireAuth() {
     return {
       session: null,
       error: NextResponse.json(
-        { error: 'Unauthorized. Please sign in.' },
+        { success: false, error: 'Unauthorized. Please sign in.' },
         { status: 401 }
       ),
     };
@@ -25,19 +25,19 @@ export function requireRole(
 ): NextResponse | null {
   if (!allowed.includes(role)) {
     return NextResponse.json(
-      { error: 'Forbidden. Insufficient permissions.' },
+      { success: false, error: 'Forbidden. Insufficient permissions.' },
       { status: 403 }
     );
   }
   return null;
 }
 
-/** Standard success response */
+/** Standard success response — wraps payload in { success: true, data } */
 export function ok(data: unknown, status = 200) {
-  return NextResponse.json(data, { status });
+  return NextResponse.json({ success: true, data }, { status });
 }
 
-/** Standard error response */
+/** Standard error response — wraps payload in { success: false, error } */
 export function fail(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json({ success: false, error: message }, { status });
 }

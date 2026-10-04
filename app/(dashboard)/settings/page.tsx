@@ -31,8 +31,10 @@ export default function SettingsPage() {
       ]);
       const bJson = await busesRes.json();
       const sJson = await staffRes.json();
-      if (bJson.success) setBuses(bJson.data || []);
-      if (sJson.success) setStaff(sJson.data || []);
+      const bList = bJson.success ? bJson.data : Array.isArray(bJson) ? bJson : bJson.data || [];
+      const sList = sJson.success ? sJson.data : Array.isArray(sJson) ? sJson : sJson.data || [];
+      setBuses(bList);
+      setStaff(sList);
     } catch (e) {
       console.error(e);
     } finally {
@@ -55,7 +57,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ plateNumber: newPlate, name: newName }),
       });
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && (json.success || json._id || json.data)) {
         toast.success(`Bus ${newPlate} added successfully`);
         setNewPlate('');
         setNewName('');
@@ -65,6 +67,7 @@ export default function SettingsPage() {
       }
     } catch (err) {
       console.error(err);
+      toast.error('Failed to connect to server');
     } finally {
       setAddingBus(false);
     }
@@ -86,8 +89,8 @@ export default function SettingsPage() {
         }),
       });
       const json = await res.json();
-      if (json.success) {
-        toast.success(`${staffRole} ${staffName} added successfully`);
+      if (res.ok && (json.success || json._id || json.data)) {
+        toast.success(`${staffRole === 'driver' ? 'Driver' : 'Attendant'} ${staffName} added successfully`);
         setStaffName('');
         setStaffPhone('');
         setStaffSalary('');
@@ -97,6 +100,7 @@ export default function SettingsPage() {
       }
     } catch (err) {
       console.error(err);
+      toast.error('Failed to connect to server');
     } finally {
       setAddingStaff(false);
     }
