@@ -98,7 +98,7 @@ export function OwnerDashboard({ session }: OwnerDashboardProps) {
       </div>
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           id="total-expense"
           label="Total Expenses"
@@ -137,15 +137,6 @@ export function OwnerDashboard({ session }: OwnerDashboardProps) {
           value={`₹${(kpis.totalBookingRevenue || 0).toLocaleString('en-IN')}`}
           subValue={`${kpis.totalBookings || 0} trip hires`}
           icon={<Ticket className="w-5 h-5 text-emerald-600" />}
-          loading={loading}
-        />
-
-        <KpiCard
-          id="cost-per-km"
-          label="Cost Per KM"
-          value={kpis.costPerKm ? `₹${kpis.costPerKm}` : '₹0'}
-          subValue="Fleet average"
-          icon={<TrendingDown className="w-5 h-5 text-indigo-600" />}
           loading={loading}
         />
       </div>

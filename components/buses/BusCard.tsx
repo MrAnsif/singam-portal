@@ -70,14 +70,10 @@ export function BusCard({ bus, stats }: BusCardProps) {
 
       {/* Metrics Row */}
       {stats && (
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-100 text-xs">
+        <div className="pt-2 border-t border-neutral-100 text-xs">
           <div>
             <span className="text-neutral-400 block text-[10px] uppercase">Distance Logged</span>
             <span className="font-bold text-neutral-900">{(stats.totalKm || 0).toLocaleString('en-IN')} KM</span>
-          </div>
-          <div>
-            <span className="text-neutral-400 block text-[10px] uppercase">Cost / KM</span>
-            <span className="font-bold text-neutral-900">₹{stats.costPerKm || 0}</span>
           </div>
         </div>
       )}

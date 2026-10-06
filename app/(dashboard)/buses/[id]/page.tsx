@@ -42,7 +42,6 @@ export default async function BusDetailPage({ params }: BusDetailProps) {
   const grandTotalExp = totalDieselCost + totalAdblueCost + totalOther;
 
   const kmPerL = totalDieselL > 0 ? (totalKm / totalDieselL).toFixed(2) : '0';
-  const costPerKm = totalKm > 0 ? (grandTotalExp / totalKm).toFixed(2) : '0';
 
   return (
     <div className="space-y-6">
@@ -67,7 +66,7 @@ export default async function BusDetailPage({ params }: BusDetailProps) {
       </div>
 
       {/* Bus KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
         <div className="p-4 bg-white rounded-xl border border-neutral-200 shadow-xs">
           <span className="text-neutral-500 font-medium">Distance Logged</span>
           <p className="text-xl font-bold text-neutral-900 mt-1">{totalKm.toLocaleString('en-IN')} KM</p>
@@ -79,10 +78,6 @@ export default async function BusDetailPage({ params }: BusDetailProps) {
         <div className="p-4 bg-white rounded-xl border border-neutral-200 shadow-xs">
           <span className="text-neutral-500 font-medium">Fuel Efficiency</span>
           <p className="text-xl font-bold text-blue-900 mt-1">{kmPerL} KM/L</p>
-        </div>
-        <div className="p-4 bg-white rounded-xl border border-neutral-200 shadow-xs">
-          <span className="text-neutral-500 font-medium">Cost / KM</span>
-          <p className="text-xl font-bold text-indigo-900 mt-1">₹{costPerKm}</p>
         </div>
       </div>
 

@@ -429,14 +429,11 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
           {/* Auto-calculated Distance Card */}
           <div className="calc-card p-3 rounded-lg border border-dashed border-blue-300 bg-blue-50/50">
             <span className="text-[10px] uppercase font-bold text-blue-800 tracking-wider block">
-              Calculated automatically
+              Distance travelled
             </span>
             <div className="text-lg font-bold text-blue-950 mt-0.5">
               {travelledKm.toLocaleString('en-IN')} <span className="text-xs font-normal">KM</span>
             </div>
-            <span className="text-[11px] text-blue-700 block mt-0.5">
-              Distance travelled today
-            </span>
           </div>
         </div>
 

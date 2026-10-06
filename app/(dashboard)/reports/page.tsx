@@ -42,8 +42,7 @@ export default function ReportsPage() {
       `Diesel Consumed (L),${data.totalDieselL}\n` +
       `Total Expenses (INR),${data.totalExpense}\n` +
       `Trip Booking Revenue (INR),${data.totalRevenue}\n` +
-      `Fuel Efficiency (KM/L),${data.kmPerL}\n` +
-      `Cost per KM (INR),${data.costPerKm}\n`;
+      `Fuel Efficiency (KM/L),${data.kmPerL}\n`;
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
