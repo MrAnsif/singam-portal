@@ -52,14 +52,9 @@ export default async function BusDetailPage({ params }: BusDetailProps) {
             <BusIcon className="w-7 h-7" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-2xl font-bold text-neutral-900">{serializedBus.plateNumber}</h1>
-              <span className="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-0.5 rounded-full font-medium">
-                {serializedBus.status}
-              </span>
-            </div>
+            <h1 className="text-2xl font-bold text-neutral-900">{serializedBus.plateNumber}</h1>
             <p className="text-xs text-neutral-500 mt-1">
-              {serializedBus.name || 'Fleet Bus'} • Default Driver: {serializedBus.defaultDriverId?.name || 'Unassigned'}
+              {serializedBus.name || 'Fleet Bus'}
             </p>
           </div>
         </div>

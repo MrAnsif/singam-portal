@@ -14,8 +14,6 @@ export const metadata: Metadata = {
 export default async function BusesPage() {
   await connectDB();
   const buses = await Bus.find({})
-    .populate('defaultDriverId', 'name')
-    .populate('defaultAttendantId', 'name')
     .sort({ plateNumber: 1 })
     .lean();
 
@@ -27,7 +25,7 @@ export default async function BusesPage() {
         <div>
           <h1 className="text-xl font-bold text-neutral-900">Fleet Buses</h1>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Manage active bus vehicles, default staff assignments, and bus operational stats.
+            Overview of fleet bus vehicles and operational performance stats.
           </p>
         </div>
 
