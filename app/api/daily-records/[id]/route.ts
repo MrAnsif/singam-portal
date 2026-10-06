@@ -9,20 +9,19 @@ import { requireAuth, requireRole, ok, fail } from '@/lib/api-helpers';
 import { z } from 'zod';
 
 const UpdateRecordSchema = z.object({
-  openingKm: z.number().min(0).optional(),
-  closingKm: z.number().min(0).optional(),
+  travelledKm: z.number().min(0).optional(),
   driverId: z.string().nullable().optional(),
   attendantId: z.string().nullable().optional(),
   diesel: z
     .object({
       qty: z.number().min(0).optional(),
-      pricePerL: z.number().min(0).optional(),
+      total: z.number().min(0).optional(),
     })
     .optional(),
   adblue: z
     .object({
       qty: z.number().min(0).optional(),
-      pricePerL: z.number().min(0).optional(),
+      total: z.number().min(0).optional(),
     })
     .optional(),
   bookings: z.array(z.any()).optional(),
@@ -77,23 +76,39 @@ export async function PATCH(
   const existing = await DailyRecord.findById(id);
   if (!existing) return fail('Record not found', 404);
 
-  // Validate km ordering if both provided
-  const newOpening = parsed.data.openingKm ?? existing.openingKm;
-  const newClosing = parsed.data.closingKm ?? existing.closingKm;
-  if (newClosing < newOpening) {
-    return fail('Closing KM cannot be less than opening KM.');
-  }
-
   // Write audit log before update
   const before = existing.toObject();
-  
+
+  // Build update payload — map simplified UI fields to schema structure
+  const updateData: Record<string, unknown> = {
+    status: 'edited',
+    updatedBy: session!.user.id,
+  };
+
+  if (parsed.data.travelledKm !== undefined) updateData.travelledKm = parsed.data.travelledKm;
+  if (parsed.data.driverId !== undefined) updateData.driverId = parsed.data.driverId;
+  if (parsed.data.attendantId !== undefined) updateData.attendantId = parsed.data.attendantId;
+  if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes;
+  if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
+  if (parsed.data.bookings !== undefined) {
+    // Normalise bookings: cost is always 0 in the manager flow
+    updateData.bookings = parsed.data.bookings.map((b: any) => ({ ...b, cost: 0 }));
+  }
+  if (parsed.data.otherExpenses !== undefined) updateData.otherExpenses = parsed.data.otherExpenses;
+  if (parsed.data.diesel !== undefined) {
+    updateData['diesel.qty'] = parsed.data.diesel.qty ?? existing.diesel.qty;
+    updateData['diesel.pricePerL'] = 0;
+    updateData['diesel.total'] = parsed.data.diesel.total ?? existing.diesel.total;
+  }
+  if (parsed.data.adblue !== undefined) {
+    updateData['adblue.qty'] = parsed.data.adblue.qty ?? existing.adblue.qty;
+    updateData['adblue.pricePerL'] = 0;
+    updateData['adblue.total'] = parsed.data.adblue.total ?? existing.adblue.total;
+  }
+
   const updated = await DailyRecord.findByIdAndUpdate(
     id,
-    {
-      ...parsed.data,
-      status: 'edited',
-      updatedBy: session!.user.id,
-    },
+    { $set: updateData },
     { new: true, runValidators: true }
   )
     .populate('busId', 'plateNumber name')

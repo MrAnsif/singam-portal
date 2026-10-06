@@ -1,52 +1,65 @@
 'use client';
 // app/(dashboard)/expenses/page.tsx
 // Owner-only Expenses page with summary cards and itemized expenses table
-import { useState, useEffect } from 'react';
-import { PeriodSelector, type Period } from '@/components/ui/PeriodSelector';
-import { Search, Receipt, Fuel, Filter, ArrowUpRight } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { PeriodSelector } from '@/components/ui/PeriodSelector';
+import { useDateFilter } from '@/lib/hooks/useDateFilter';
+import { Search, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function ExpensesPage() {
-  const [period, setPeriod] = useState<Period>('month');
+  const {
+    period,
+    setPeriod,
+    dateRange,
+    handleCustomDateChange,
+    buildQueryParams,
+  } = useDateFilter('month');
+
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
-  useEffect(() => {
-    async function loadExpenses() {
-      setLoading(true);
-      try {
-        const res = await fetch('/api/expenses');
-        const json = await res.json();
-        if (json.success) {
-          setExpenses(json.data.expenses || []);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const loadExpenses = useCallback(async () => {
+    const queryParams = buildQueryParams();
+    if (queryParams === null) return;
+
+    setLoading(true);
+    try {
+      const url = `/api/expenses${queryParams ? `?${queryParams}` : ''}`;
+      const res = await fetch(url, { cache: 'no-store' });
+      const json = await res.json();
+      if (json.success) {
+        setExpenses(json.data.expenses || []);
       }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
+  }, [buildQueryParams]);
+
+  useEffect(() => {
     loadExpenses();
-  }, [period]);
+  }, [loadExpenses]);
 
   const filtered = expenses.filter((e) => {
     const matchesSearch =
-      e.busPlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      e.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (e.busPlate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (e.description || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
-      categoryFilter === 'all' || e.category.toLowerCase() === categoryFilter.toLowerCase();
+      categoryFilter === 'all' || (e.category || '').toLowerCase() === categoryFilter.toLowerCase();
     return matchesSearch && matchesCategory;
   });
 
-  const totalExpense = filtered.reduce((s, e) => s + e.amount, 0);
+  const totalExpense = filtered.reduce((s, e) => s + (e.amount || 0), 0);
   const dieselExpense = filtered
     .filter((e) => e.category === 'Diesel')
-    .reduce((s, e) => s + e.amount, 0);
+    .reduce((s, e) => s + (e.amount || 0), 0);
   const adblueExpense = filtered
     .filter((e) => e.category === 'AdBlue')
-    .reduce((s, e) => s + e.amount, 0);
+    .reduce((s, e) => s + (e.amount || 0), 0);
   const otherExpense = totalExpense - dieselExpense - adblueExpense;
 
   return (
@@ -59,7 +72,12 @@ export default function ExpensesPage() {
           </p>
         </div>
 
-        <PeriodSelector selectedPeriod={period} onPeriodChange={setPeriod} />
+        <PeriodSelector
+          selectedPeriod={period}
+          dateRange={dateRange ?? undefined}
+          onPeriodChange={setPeriod}
+          onCustomDateChange={handleCustomDateChange}
+        />
       </div>
 
       {/* Summary Cards */}

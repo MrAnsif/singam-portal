@@ -31,7 +31,7 @@ const MANAGER_NAV: NavItem[] = [
 
 const OWNER_NAV: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/records', label: 'Operations', icon: ClipboardList },
+  { href: '/records', label: 'Trips', icon: ClipboardList },
   { href: '/expenses', label: 'Expenses', icon: Receipt },
   { href: '/bookings', label: 'Bookings', icon: Bookmark },
   { href: '/buses', label: 'Buses', icon: Bus },

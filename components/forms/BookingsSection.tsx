@@ -1,13 +1,12 @@
 'use client';
 // components/forms/BookingsSection.tsx
-// Dynamic array of trip bookings (revenue vs cost)
+// Dynamic array of trip bookings — revenue only (no trip cost tracked in manager flow)
 import { Plus, Trash2, Ticket } from 'lucide-react';
 
 export interface BookingInput {
   reference?: string;
   customerGroup?: string;
   revenue: number;
-  cost: number;
   notes?: string;
 }
 
@@ -20,7 +19,7 @@ export function BookingsSection({ bookings, onChange }: BookingsSectionProps) {
   const addBooking = () => {
     onChange([
       ...bookings,
-      { reference: '', customerGroup: '', revenue: 0, cost: 0, notes: '' },
+      { reference: '', customerGroup: '', revenue: 0, notes: '' },
     ]);
   };
 
@@ -35,8 +34,6 @@ export function BookingsSection({ bookings, onChange }: BookingsSectionProps) {
   };
 
   const totalRevenue = bookings.reduce((sum, b) => sum + (Number(b.revenue) || 0), 0);
-  const totalCost = bookings.reduce((sum, b) => sum + (Number(b.cost) || 0), 0);
-  const netContribution = totalRevenue - totalCost;
 
   return (
     <div className="space-y-4 pt-2">
@@ -66,7 +63,7 @@ export function BookingsSection({ bookings, onChange }: BookingsSectionProps) {
               key={idx}
               className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end text-xs"
             >
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-4">
                 <label className="block font-medium text-neutral-700 mb-1">
                   Customer / Group
                 </label>
@@ -92,7 +89,7 @@ export function BookingsSection({ bookings, onChange }: BookingsSectionProps) {
                 />
               </div>
 
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-3">
                 <label className="block font-medium text-neutral-700 mb-1">
                   Revenue (₹)
                 </label>
@@ -106,27 +103,7 @@ export function BookingsSection({ bookings, onChange }: BookingsSectionProps) {
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="block font-medium text-neutral-700 mb-1">
-                  Trip Cost (₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={item.cost || ''}
-                  onChange={(e) => updateBooking(idx, 'cost', Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white"
-                />
-              </div>
-
-              <div className="sm:col-span-2 flex items-center justify-between space-x-2">
-                <div className="text-right">
-                  <span className="text-[10px] text-neutral-400 block">Net</span>
-                  <span className={`font-semibold ${netContribution >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    ₹{(Number(item.revenue || 0) - Number(item.cost || 0)).toLocaleString('en-IN')}
-                  </span>
-                </div>
+              <div className="sm:col-span-1 flex justify-end pb-1">
                 <button
                   type="button"
                   onClick={() => removeBooking(idx)}
@@ -142,10 +119,7 @@ export function BookingsSection({ bookings, onChange }: BookingsSectionProps) {
           {/* Totals Summary */}
           <div className="p-2.5 bg-emerald-50/50 border border-emerald-200 rounded-lg flex items-center justify-between text-xs font-medium text-emerald-900">
             <span>Bookings Total: {bookings.length}</span>
-            <div className="space-x-4">
-              <span>Revenue: <strong>₹{totalRevenue.toLocaleString('en-IN')}</strong></span>
-              <span>Net: <strong>₹{netContribution.toLocaleString('en-IN')}</strong></span>
-            </div>
+            <span>Revenue: <strong>₹{totalRevenue.toLocaleString('en-IN')}</strong></span>
           </div>
         </div>
       )}

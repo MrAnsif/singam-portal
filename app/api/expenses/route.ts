@@ -1,16 +1,28 @@
-// app/api/expenses/route.ts
-// GET /api/expenses — returns detailed expense line-items for expenses page
 import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { DailyRecord } from '@/lib/models';
 import { requireAuth, ok } from '@/lib/api-helpers';
+import { buildMongoDateFilter } from '@/lib/date-utils';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const { error } = await requireAuth();
   if (error) return error;
 
+  const { searchParams } = request.nextUrl;
+  const from = searchParams.get('from');
+  const to = searchParams.get('to');
+  const period = searchParams.get('period');
+
+  const filter: Record<string, unknown> = {};
+  const dateFilter = buildMongoDateFilter(from, to, period);
+  if (dateFilter) {
+    filter.date = dateFilter;
+  }
+
   await connectDB();
-  const records = await DailyRecord.find({})
+  const records = await DailyRecord.find(filter)
     .sort({ date: -1 })
     .populate('busId', 'plateNumber')
     .populate('createdBy', 'name')
@@ -35,7 +47,7 @@ export async function GET(request: NextRequest) {
         date: r.date,
         busPlate,
         category: 'Diesel',
-        description: `Diesel refill: ${r.diesel.qty}L @ ₹${r.diesel.pricePerL}/L`,
+        description: `Diesel refill: ${r.diesel.qty}L — ₹${r.diesel.total}`,
         amount: r.diesel.total,
         enteredBy,
         recordId: r._id,
@@ -49,7 +61,7 @@ export async function GET(request: NextRequest) {
         date: r.date,
         busPlate,
         category: 'AdBlue',
-        description: `AdBlue refill: ${r.adblue.qty}L @ ₹${r.adblue.pricePerL}/L`,
+        description: `AdBlue refill: ${r.adblue.qty}L — ₹${r.adblue.total}`,
         amount: r.adblue.total,
         enteredBy,
         recordId: r._id,

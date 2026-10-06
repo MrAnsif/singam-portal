@@ -10,10 +10,11 @@ import { format } from 'date-fns';
 
 interface DailyRecordsTableProps {
   records: any[];
+  loading?: boolean;
   onRefresh?: () => void;
 }
 
-export function DailyRecordsTable({ records }: DailyRecordsTableProps) {
+export function DailyRecordsTable({ records, loading }: DailyRecordsTableProps) {
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -83,7 +84,13 @@ export function DailyRecordsTable({ records }: DailyRecordsTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="py-8 text-center text-neutral-400">
+                  Loading daily records...
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} className="py-8 text-center text-neutral-400">
                   No matching daily records found.

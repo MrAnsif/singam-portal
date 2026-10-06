@@ -74,24 +74,16 @@ export function RecordDetailDrawer({ record, onClose }: RecordDetailDrawerProps)
             </div>
           </div>
 
-          {/* Section: Odometer */}
+          {/* Section: Distance */}
           <div className="space-y-2">
             <h3 className="font-semibold text-neutral-900 flex items-center space-x-1.5">
               <Gauge className="w-4 h-4 text-blue-600" />
-              <span>Odometer Log</span>
+              <span>Distance Log</span>
             </h3>
-            <div className="p-3 bg-neutral-50 rounded-xl space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Opening KM:</span>
-                <span className="font-semibold">{record.openingKm}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Closing KM:</span>
-                <span className="font-semibold">{record.closingKm}</span>
-              </div>
-              <div className="flex justify-between border-t border-neutral-200 pt-1.5 font-semibold text-blue-900">
+            <div className="p-3 bg-neutral-50 rounded-xl">
+              <div className="flex justify-between font-semibold text-blue-900">
                 <span>Distance Travelled:</span>
-                <span>{record.travelledKm} KM</span>
+                <span>{record.travelledKm || 0} KM</span>
               </div>
             </div>
           </div>
@@ -105,11 +97,11 @@ export function RecordDetailDrawer({ record, onClose }: RecordDetailDrawerProps)
             <div className="p-3 bg-neutral-50 rounded-xl space-y-2">
               <div className="flex justify-between">
                 <span className="text-neutral-500">Diesel Refill:</span>
-                <span className="font-semibold">{record.diesel?.qty || 0} L @ ₹{record.diesel?.pricePerL || 0} = ₹{record.diesel?.total || 0}</span>
+                <span className="font-semibold">{record.diesel?.qty || 0} L — ₹{record.diesel?.total || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">AdBlue Refill:</span>
-                <span className="font-semibold">{record.adblue?.qty || 0} L @ ₹{record.adblue?.pricePerL || 0} = ₹{record.adblue?.total || 0}</span>
+                <span className="font-semibold">{record.adblue?.qty || 0} L — ₹{record.adblue?.total || 0}</span>
               </div>
             </div>
           </div>

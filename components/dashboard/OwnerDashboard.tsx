@@ -3,7 +3,8 @@
 // Comprehensive financial & operational analytics view for Owner role
 import { useState, useEffect, useCallback } from 'react';
 import type { Session } from 'next-auth';
-import { PeriodSelector, type Period } from '@/components/ui/PeriodSelector';
+import { PeriodSelector } from '@/components/ui/PeriodSelector';
+import { useDateFilter } from '@/lib/hooks/useDateFilter';
 import { KpiCard } from '@/components/ui/KpiCard';
 import { ExpenseBreakdownChart } from './ExpenseBreakdownChart';
 import { ExpenseTrendChart } from './ExpenseTrendChart';
@@ -26,20 +27,26 @@ interface OwnerDashboardProps {
 }
 
 export function OwnerDashboard({ session }: OwnerDashboardProps) {
-  const [period, setPeriod] = useState<Period>('month');
-  const [customRange, setCustomRange] = useState<{ from?: string; to?: string }>({});
+  const {
+    period,
+    setPeriod,
+    dateRange,
+    handleCustomDateChange,
+    buildQueryParams,
+  } = useDateFilter('month');
+
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
 
   const fetchStats = useCallback(async () => {
+    const queryParams = buildQueryParams();
+    if (queryParams === null) return;
+
     setLoading(true);
     try {
-      let url = `/api/dashboard/stats?period=${period}`;
-      if (period === 'custom' && customRange.from && customRange.to) {
-        url += `&from=${customRange.from}&to=${customRange.to}`;
-      }
-      const res = await fetch(url);
+      const url = `/api/dashboard/stats${queryParams ? `?${queryParams}` : ''}`;
+      const res = await fetch(url, { cache: 'no-store' });
       const json = await res.json();
 
       if (json.success) {
@@ -52,7 +59,7 @@ export function OwnerDashboard({ session }: OwnerDashboardProps) {
     } finally {
       setLoading(false);
     }
-  }, [period, customRange]);
+  }, [buildQueryParams]);
 
   useEffect(() => {
     fetchStats();
@@ -77,8 +84,9 @@ export function OwnerDashboard({ session }: OwnerDashboardProps) {
         <div className="flex items-center space-x-3">
           <PeriodSelector
             selectedPeriod={period}
-            onPeriodChange={(p) => setPeriod(p)}
-            onCustomDateChange={(from, to) => setCustomRange({ from, to })}
+            dateRange={dateRange ?? undefined}
+            onPeriodChange={setPeriod}
+            onCustomDateChange={handleCustomDateChange}
           />
           <button
             onClick={fetchStats}

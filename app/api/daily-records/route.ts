@@ -5,6 +5,7 @@ import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { DailyRecord, AuditLog } from '@/lib/models';
 import { requireAuth, ok, fail } from '@/lib/api-helpers';
+import { buildMongoDateFilter } from '@/lib/date-utils';
 import { z } from 'zod';
 
 const CreateRecordSchema = z.object({
@@ -12,15 +13,16 @@ const CreateRecordSchema = z.object({
   busId: z.string().min(1),
   driverId: z.string().optional(),
   attendantId: z.string().optional(),
-  openingKm: z.number().min(0),
-  closingKm: z.number().min(0),
+  // Simplified distance: manager enters KM travelled directly
+  travelledKm: z.number().min(0).default(0),
   diesel: z.object({
     qty: z.number().min(0).default(0),
-    pricePerL: z.number().min(0).default(0),
+    // total is the full price paid (qty × rate), entered directly
+    total: z.number().min(0).default(0),
   }),
   adblue: z.object({
     qty: z.number().min(0).default(0),
-    pricePerL: z.number().min(0).default(0),
+    total: z.number().min(0).default(0),
   }),
   bookings: z
     .array(
@@ -28,7 +30,6 @@ const CreateRecordSchema = z.object({
         reference: z.string().optional(),
         customerGroup: z.string().optional(),
         revenue: z.number().min(0).default(0),
-        cost: z.number().min(0).default(0),
         notes: z.string().optional(),
       })
     )
@@ -46,6 +47,8 @@ const CreateRecordSchema = z.object({
   status: z.enum(['draft', 'complete']).default('complete'),
 });
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const { error } = await requireAuth();
   if (error) return error;
@@ -54,21 +57,17 @@ export async function GET(request: NextRequest) {
   const busId = searchParams.get('busId');
   const from = searchParams.get('from');
   const to = searchParams.get('to');
+  const period = searchParams.get('period');
   const status = searchParams.get('status');
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
-  const limit = Math.min(100, parseInt(searchParams.get('limit') ?? '20', 10));
+  const limit = Math.min(500, parseInt(searchParams.get('limit') ?? '20', 10));
 
   const filter: Record<string, unknown> = {};
   if (busId) filter.busId = busId;
   if (status) filter.status = status;
-  if (from || to) {
-    filter.date = {};
-    if (from) (filter.date as Record<string, Date>).$gte = new Date(from);
-    if (to) {
-      const toDate = new Date(to);
-      toDate.setHours(23, 59, 59, 999);
-      (filter.date as Record<string, Date>).$lte = toDate;
-    }
+  const dateFilter = buildMongoDateFilter(from, to, period);
+  if (dateFilter) {
+    filter.date = dateFilter;
   }
 
   await connectDB();
@@ -113,28 +112,9 @@ export async function POST(request: NextRequest) {
     return fail(parsed.error.issues[0].message);
   }
 
-  const { date, busId, openingKm, closingKm } = parsed.data;
-
-  // Business rule: closing KM must be >= opening KM
-  if (closingKm < openingKm) {
-    return fail('Closing KM cannot be less than opening KM. Please check your odometer readings.');
-  }
+  const { date, busId, travelledKm } = parsed.data;
 
   await connectDB();
-
-  // Check for previous closing KM to detect impossible readings
-  const previousRecord = await DailyRecord.findOne({
-    busId,
-    date: { $lt: new Date(date) },
-  })
-    .sort({ date: -1 })
-    .lean();
-
-  if (previousRecord && openingKm < previousRecord.closingKm) {
-    return fail(
-      `Opening KM (${openingKm}) is less than the previous closing KM (${previousRecord.closingKm}). Please verify the odometer reading.`
-    );
-  }
 
   // Check for duplicate: same bus + same date
   const startOfDay = new Date(date);
@@ -158,9 +138,30 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Map simplified UI fields to the database schema
+  // pricePerL is stored as 0 (we use total directly)
   const record = await DailyRecord.create({
-    ...parsed.data,
     date: new Date(date),
+    busId: parsed.data.busId,
+    driverId: parsed.data.driverId,
+    attendantId: parsed.data.attendantId,
+    travelledKm,
+    // openingKm / closingKm are omitted — not tracked in the simplified flow
+    diesel: {
+      qty: parsed.data.diesel.qty,
+      pricePerL: 0,
+      total: parsed.data.diesel.total,
+    },
+    adblue: {
+      qty: parsed.data.adblue.qty,
+      pricePerL: 0,
+      total: parsed.data.adblue.total,
+    },
+    // Normalise bookings — cost always 0 (not tracked in manager flow)
+    bookings: parsed.data.bookings.map((b) => ({ ...b, cost: 0 })),
+    otherExpenses: parsed.data.otherExpenses,
+    notes: parsed.data.notes,
+    status: parsed.data.status,
     createdBy: session!.user.id,
   });
 

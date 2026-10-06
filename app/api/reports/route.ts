@@ -1,18 +1,32 @@
 // app/api/reports/route.ts
-// GET /api/reports — returns aggregated period comparison report for owner
+// GET /api/reports?from=YYYY-MM-DD&to=YYYY-MM-DD — returns aggregated period report for owner
 import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { DailyRecord, Bus } from '@/lib/models';
 import { requireAuth, ok } from '@/lib/api-helpers';
+import { buildMongoDateFilter } from '@/lib/date-utils';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const { error } = await requireAuth();
   if (error) return error;
 
+  const { searchParams } = request.nextUrl;
+  const from = searchParams.get('from');
+  const to = searchParams.get('to');
+  const period = searchParams.get('period');
+
+  const filter: Record<string, unknown> = {};
+  const dateFilter = buildMongoDateFilter(from, to, period);
+  if (dateFilter) {
+    filter.date = dateFilter;
+  }
+
   await connectDB();
 
   const [records, buses] = await Promise.all([
-    DailyRecord.find({}).sort({ date: -1 }).populate('busId', 'plateNumber').lean(),
+    DailyRecord.find(filter).sort({ date: -1 }).populate('busId', 'plateNumber').lean(),
     Bus.find({}).lean(),
   ]);
 

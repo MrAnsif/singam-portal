@@ -14,10 +14,26 @@ import {
   parseISO, isValid,
 } from 'date-fns';
 
+export const dynamic = 'force-dynamic';
+
 type Period = 'today' | 'week' | 'month' | '6months' | 'year' | 'custom';
 
 function getDateRange(period: Period, from?: string, to?: string) {
   const now = new Date();
+
+  if (from || to) {
+    const s = from && isValid(parseISO(from)) ? parseISO(from) : startOfMonth(now);
+    const e = to && isValid(parseISO(to)) ? parseISO(to) : endOfMonth(now);
+    const start = startOfDay(s);
+    const end = endOfDay(e);
+    const diffMs = Math.max(86400000, end.getTime() - start.getTime());
+    return {
+      start,
+      end,
+      prevStart: new Date(start.getTime() - diffMs),
+      prevEnd: new Date(start.getTime() - 1),
+    };
+  }
 
   switch (period) {
     case 'today':
@@ -30,12 +46,8 @@ function getDateRange(period: Period, from?: string, to?: string) {
       return { start: startOfMonth(subMonths(now, 5)), end: endOfMonth(now), prevStart: startOfMonth(subMonths(now, 11)), prevEnd: endOfMonth(subMonths(now, 6)) };
     case 'year':
       return { start: startOfYear(now), end: endOfYear(now), prevStart: startOfYear(subYears(now, 1)), prevEnd: endOfYear(subYears(now, 1)) };
-    case 'custom': {
-      const s = from && isValid(parseISO(from)) ? parseISO(from) : startOfMonth(now);
-      const e = to && isValid(parseISO(to)) ? parseISO(to) : endOfMonth(now);
-      const diffMs = e.getTime() - s.getTime();
-      return { start: s, end: e, prevStart: new Date(s.getTime() - diffMs), prevEnd: new Date(s.getTime() - 1) };
-    }
+    default:
+      return { start: startOfMonth(now), end: endOfMonth(now), prevStart: startOfMonth(subMonths(now, 1)), prevEnd: endOfMonth(subMonths(now, 1)) };
   }
 }
 

@@ -13,9 +13,10 @@ import {
   Users,
   AlertTriangle,
   Save,
-  CheckCircle2,
-  RotateCcw,
   Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Minus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,16 +39,23 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
   const [driverId, setDriverId] = useState<string>(initialData?.driverId?._id || initialData?.driverId || '');
   const [attendantId, setAttendantId] = useState<string>(initialData?.attendantId?._id || initialData?.attendantId || '');
 
-  const [openingKm, setOpeningKm] = useState<number | ''>(initialData?.openingKm ?? '');
-  const [closingKm, setClosingKm] = useState<number | ''>(initialData?.closingKm ?? '');
+  // Simplified distance: just KM travelled (no opening/closing)
+  const [travelledKm, setTravelledKm] = useState<number | ''>(
+    initialData?.travelledKm ?? ''
+  );
 
+  // Diesel: quantity + total price paid
   const [dieselQty, setDieselQty] = useState<number | ''>(initialData?.diesel?.qty ?? '');
-  const [dieselPrice, setDieselPrice] = useState<number | ''>(initialData?.diesel?.pricePerL ?? '');
+  const [dieselTotal, setDieselTotal] = useState<number | ''>(initialData?.diesel?.total ?? '');
 
+  // AdBlue: quantity + total price paid
   const [adblueQty, setAdblueQty] = useState<number | ''>(initialData?.adblue?.qty ?? '');
-  const [adbluePrice, setAdbluePrice] = useState<number | ''>(initialData?.adblue?.pricePerL ?? '');
+  const [adblueTotal, setAdblueTotal] = useState<number | ''>(initialData?.adblue?.total ?? '');
 
-  const [bookings, setBookings] = useState<BookingInput[]>(initialData?.bookings || []);
+  const [bookings, setBookings] = useState<BookingInput[]>(
+    // Strip 'cost' field from existing data when editing
+    (initialData?.bookings || []).map(({ cost: _cost, ...b }: any) => b)
+  );
   const [otherExpenses, setOtherExpenses] = useState<ExpenseInput[]>(initialData?.otherExpenses || []);
   const [notes, setNotes] = useState<string>(initialData?.notes || '');
 
@@ -59,28 +67,18 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [draftPrompt, setDraftPrompt] = useState(false);
 
-  // Auto-calculated fields
-  const travelledKm =
-    typeof closingKm === 'number' && typeof openingKm === 'number'
-      ? Math.max(0, closingKm - openingKm)
-      : 0;
-
-  const dieselTotal =
-    typeof dieselQty === 'number' && typeof dieselPrice === 'number'
-      ? +(dieselQty * dieselPrice).toFixed(2)
-      : 0;
-
-  const adblueTotal =
-    typeof adblueQty === 'number' && typeof adbluePrice === 'number'
-      ? +(adblueQty * adbluePrice).toFixed(2)
-      : 0;
+  // ─── Computed Totals ────────────────────────────────────────────────────────
+  const dieselAmount = typeof dieselTotal === 'number' ? dieselTotal : 0;
+  const adblueAmount = typeof adblueTotal === 'number' ? adblueTotal : 0;
 
   const otherExpensesTotal = otherExpenses.reduce(
     (sum, e) => sum + (Number(e.amount) || 0),
     0
   );
 
-  const totalExpense = dieselTotal + adblueTotal + otherExpensesTotal;
+  const totalRevenue = bookings.reduce((sum, b) => sum + (Number(b.revenue) || 0), 0);
+  const totalExpense = dieselAmount + adblueAmount + otherExpensesTotal;
+  const netAmount = totalRevenue - totalExpense;
 
   // 1. Fetch Buses and Staff on mount
   useEffect(() => {
@@ -180,12 +178,11 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
         if (parsed.busId) setBusId(parsed.busId);
         if (parsed.driverId) setDriverId(parsed.driverId);
         if (parsed.attendantId) setAttendantId(parsed.attendantId);
-        if (parsed.openingKm !== undefined) setOpeningKm(parsed.openingKm);
-        if (parsed.closingKm !== undefined) setClosingKm(parsed.closingKm);
+        if (parsed.travelledKm !== undefined) setTravelledKm(parsed.travelledKm);
         if (parsed.dieselQty !== undefined) setDieselQty(parsed.dieselQty);
-        if (parsed.dieselPrice !== undefined) setDieselPrice(parsed.dieselPrice);
+        if (parsed.dieselTotal !== undefined) setDieselTotal(parsed.dieselTotal);
         if (parsed.adblueQty !== undefined) setAdblueQty(parsed.adblueQty);
-        if (parsed.adbluePrice !== undefined) setAdbluePrice(parsed.adbluePrice);
+        if (parsed.adblueTotal !== undefined) setAdblueTotal(parsed.adblueTotal);
         if (parsed.bookings) setBookings(parsed.bookings);
         if (parsed.otherExpenses) setOtherExpenses(parsed.otherExpenses);
         if (parsed.notes) setNotes(parsed.notes);
@@ -211,12 +208,11 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
       busId,
       driverId,
       attendantId,
-      openingKm,
-      closingKm,
+      travelledKm,
       dieselQty,
-      dieselPrice,
+      dieselTotal,
       adblueQty,
-      adbluePrice,
+      adblueTotal,
       bookings,
       otherExpenses,
       notes,
@@ -228,12 +224,11 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
     busId,
     driverId,
     attendantId,
-    openingKm,
-    closingKm,
+    travelledKm,
     dieselQty,
-    dieselPrice,
+    dieselTotal,
     adblueQty,
-    adbluePrice,
+    adblueTotal,
     bookings,
     otherExpenses,
     notes,
@@ -248,11 +243,6 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
       return;
     }
 
-    if (typeof closingKm === 'number' && typeof openingKm === 'number' && closingKm < openingKm) {
-      toast.error('Closing KM must be greater than or equal to Opening KM');
-      return;
-    }
-
     setSubmitting(true);
 
     const payload = {
@@ -260,15 +250,14 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
       busId,
       driverId: driverId || undefined,
       attendantId: attendantId || undefined,
-      openingKm: Number(openingKm) || 0,
-      closingKm: Number(closingKm) || 0,
+      travelledKm: Number(travelledKm) || 0,
       diesel: {
         qty: Number(dieselQty) || 0,
-        pricePerL: Number(dieselPrice) || 0,
+        total: Number(dieselTotal) || 0,
       },
       adblue: {
         qty: Number(adblueQty) || 0,
-        pricePerL: Number(adbluePrice) || 0,
+        total: Number(adblueTotal) || 0,
       },
       bookings,
       otherExpenses,
@@ -345,7 +334,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
       <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4">
         <h2 className="text-sm font-semibold text-neutral-900 flex items-center space-x-2">
           <Bus className="w-4 h-4 text-brand-600" />
-          <span>Bus & Date Details</span>
+          <span>Bus &amp; Date Details</span>
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -388,74 +377,41 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
         </div>
       </div>
 
-      {/* SECTION 2: Odometer & Distance */}
+      {/* SECTION 2: Distance Log */}
       <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4">
         <h2 className="text-sm font-semibold text-neutral-900 flex items-center space-x-2">
           <Gauge className="w-4 h-4 text-blue-600" />
-          <span>Odometer & Distance Log</span>
+          <span>Distance Log</span>
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">
-              Opening KM *
-            </label>
-            <input
-              type="number"
-              min="0"
-              placeholder="e.g. 105200"
-              value={openingKm}
-              onChange={(e) => setOpeningKm(e.target.value === '' ? '' : Number(e.target.value))}
-              required
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 bg-white text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">
-              Closing KM *
-            </label>
-            <input
-              type="number"
-              min="0"
-              placeholder="e.g. 105650"
-              value={closingKm}
-              onChange={(e) => setClosingKm(e.target.value === '' ? '' : Number(e.target.value))}
-              required
-              className="w-full px-3 py-2 rounded-lg border border-neutral-300 bg-white text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-
-          {/* Auto-calculated Distance Card */}
-          <div className="calc-card p-3 rounded-lg border border-dashed border-blue-300 bg-blue-50/50">
-            <span className="text-[10px] uppercase font-bold text-blue-800 tracking-wider block">
-              Distance travelled
-            </span>
-            <div className="text-lg font-bold text-blue-950 mt-0.5">
-              {travelledKm.toLocaleString('en-IN')} <span className="text-xs font-normal">KM</span>
-            </div>
-          </div>
+        <div className="max-w-xs">
+          <label className="block text-xs font-semibold text-neutral-700 mb-1">
+            Distance Travelled (KM)
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            placeholder="e.g. 450"
+            value={travelledKm}
+            onChange={(e) => setTravelledKm(e.target.value === '' ? '' : Number(e.target.value))}
+            className="w-full px-3 py-2 rounded-lg border border-neutral-300 bg-white text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <p className="text-[11px] text-neutral-400 mt-1">Total KM covered</p>
         </div>
-
-        {typeof closingKm === 'number' && typeof openingKm === 'number' && closingKm < openingKm && (
-          <p className="text-xs text-rose-600 font-medium flex items-center space-x-1">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            <span>Warning: Closing KM cannot be smaller than Opening KM.</span>
-          </p>
-        )}
       </div>
 
       {/* SECTION 3: Diesel & AdBlue */}
       <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4">
         <h2 className="text-sm font-semibold text-neutral-900 flex items-center space-x-2">
           <Fuel className="w-4 h-4 text-amber-600" />
-          <span>Fuel & AdBlue Refills</span>
+          <span>Fuel &amp; AdBlue Refills</span>
         </h2>
 
         {/* Diesel Block */}
         <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 space-y-3">
           <h3 className="text-xs font-bold text-amber-900 uppercase tracking-wider">Diesel Refill</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-700 mb-1">
                 Quantity (Litres)
@@ -472,21 +428,17 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
             </div>
             <div>
               <label className="block text-[11px] font-medium text-neutral-700 mb-1">
-                Price / Litre (₹)
+                Total Price Paid (₹)
               </label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0.00"
-                value={dieselPrice}
-                onChange={(e) => setDieselPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                value={dieselTotal}
+                onChange={(e) => setDieselTotal(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-xs"
               />
-            </div>
-            <div className="calc-card p-2 rounded-lg bg-amber-100/50 border border-amber-200 flex flex-col justify-center">
-              <span className="text-[10px] font-semibold text-amber-800 uppercase">Diesel Total</span>
-              <span className="text-sm font-bold text-amber-950">₹{dieselTotal.toLocaleString('en-IN')}</span>
             </div>
           </div>
         </div>
@@ -494,7 +446,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
         {/* AdBlue Block */}
         <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 space-y-3">
           <h3 className="text-xs font-bold text-blue-900 uppercase tracking-wider">AdBlue Refill</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-medium text-neutral-700 mb-1">
                 Quantity (Litres)
@@ -511,21 +463,17 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
             </div>
             <div>
               <label className="block text-[11px] font-medium text-neutral-700 mb-1">
-                Price / Litre (₹)
+                Total Price Paid (₹)
               </label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0.00"
-                value={adbluePrice}
-                onChange={(e) => setAdbluePrice(e.target.value === '' ? '' : Number(e.target.value))}
+                value={adblueTotal}
+                onChange={(e) => setAdblueTotal(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-xs"
               />
-            </div>
-            <div className="calc-card p-2 rounded-lg bg-blue-100/50 border border-blue-200 flex flex-col justify-center">
-              <span className="text-[10px] font-semibold text-blue-800 uppercase">AdBlue Total</span>
-              <span className="text-sm font-bold text-blue-950">₹{adblueTotal.toLocaleString('en-IN')}</span>
             </div>
           </div>
         </div>
@@ -587,7 +535,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
         <OtherExpensesSection expenses={otherExpenses} onChange={setOtherExpenses} />
       </div>
 
-      {/* SECTION 7: Notes & Total Summary */}
+      {/* SECTION 7: Notes & Summary */}
       <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4">
         <div>
           <label className="block text-xs font-semibold text-neutral-700 mb-1">
@@ -602,32 +550,57 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
           />
         </div>
 
-        {/* Grand Total Summary Card */}
-        <div className="p-4 rounded-xl bg-brand-900 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-brand-300">
-              Total Day Operating Expense
-            </span>
-            <div className="text-2xl font-black mt-0.5">
-              ₹{totalExpense.toLocaleString('en-IN')}
+        {/* Summary Bar — Expense | Revenue | Net */}
+        <div className="p-4 rounded-xl bg-brand-900 text-white space-y-3">
+          {/* Three stat pills */}
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-brand-800/70 rounded-xl p-3">
+              <div className="flex items-center justify-center space-x-1 mb-1">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-brand-300">Expense</span>
+              </div>
+              <div className="text-lg font-black text-rose-300">
+                ₹{totalExpense.toLocaleString('en-IN')}
+              </div>
+              <p className="text-[10px] text-brand-400 mt-0.5">
+                Diesel ₹{dieselAmount} · AdBlue ₹{adblueAmount} · Other ₹{otherExpensesTotal}
+              </p>
             </div>
-            <p className="text-xs text-brand-200 mt-1">
-              Diesel: ₹{dieselTotal} • AdBlue: ₹{adblueTotal} • Other: ₹{otherExpensesTotal}
-            </p>
+
+            <div className="bg-brand-800/70 rounded-xl p-3">
+              <div className="flex items-center justify-center space-x-1 mb-1">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-brand-300">Revenue</span>
+              </div>
+              <div className="text-lg font-black text-emerald-300">
+                ₹{totalRevenue.toLocaleString('en-IN')}
+              </div>
+              <p className="text-[10px] text-brand-400 mt-0.5">
+                {bookings.length} booking{bookings.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            <div className="bg-brand-800/70 rounded-xl p-3">
+              <div className="flex items-center justify-center space-x-1 mb-1">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-brand-300">Net</span>
+              </div>
+              <div className={`text-lg font-black ${netAmount >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                ₹{netAmount.toLocaleString('en-IN')}
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-3 w-full sm:w-auto">
+          {/* Action buttons */}
+          <div className="flex items-center space-x-3 pt-1">
             <button
               type="button"
               onClick={() => router.push('/records')}
-              className="px-4 py-2.5 bg-brand-800 hover:bg-brand-700 text-brand-100 rounded-xl text-xs font-semibold w-1/2 sm:w-auto text-center"
+              className="px-4 py-2.5 bg-brand-800 hover:bg-brand-700 text-brand-100 rounded-xl text-xs font-semibold w-1/2 text-center"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2.5 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-xs font-semibold shadow-md flex items-center justify-center space-x-2 w-1/2 sm:w-auto"
+              className="px-6 py-2.5 bg-brand-500 hover:bg-brand-400 text-white rounded-xl text-xs font-semibold shadow-md flex items-center justify-center space-x-2 w-1/2"
             >
               <Save className="w-4 h-4" />
               <span>{submitting ? 'Saving...' : isEditing ? 'Update Record' : 'Save Record'}</span>

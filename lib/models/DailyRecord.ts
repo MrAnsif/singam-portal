@@ -23,9 +23,9 @@ export interface IDailyRecord extends Document {
   busId: mongoose.Types.ObjectId;
   driverId?: mongoose.Types.ObjectId;
   attendantId?: mongoose.Types.ObjectId;
-  openingKm: number;
-  closingKm: number;
-  travelledKm: number; // calculated on pre-save
+  openingKm?: number;
+  closingKm?: number;
+  travelledKm: number; // calculated on pre-save or provided directly
   diesel: {
     qty: number;
     pricePerL: number;
@@ -72,8 +72,8 @@ const DailyRecordSchema = new Schema<IDailyRecord>(
     busId: { type: Schema.Types.ObjectId, ref: 'Bus', required: true },
     driverId: { type: Schema.Types.ObjectId, ref: 'Staff' },
     attendantId: { type: Schema.Types.ObjectId, ref: 'Staff' },
-    openingKm: { type: Number, required: true, min: 0 },
-    closingKm: { type: Number, required: true, min: 0 },
+    openingKm: { type: Number, min: 0 },
+    closingKm: { type: Number, min: 0 },
     travelledKm: { type: Number, default: 0, min: 0 },
     diesel: {
       qty: { type: Number, default: 0, min: 0 },
@@ -104,11 +104,26 @@ DailyRecordSchema.index({ busId: 1, date: 1 }, { unique: true });
 
 // Pre-save: auto-calculate derived fields so UI never needs to compute them
 DailyRecordSchema.pre('save', function () {
-  this.travelledKm = Math.max(0, this.closingKm - this.openingKm);
-  this.diesel.total = +(this.diesel.qty * this.diesel.pricePerL).toFixed(2);
-  this.adblue.total = +(this.adblue.qty * this.adblue.pricePerL).toFixed(2);
+  // Calculate travelledKm only when opening/closing KM are both present
+  if (typeof this.openingKm === 'number' && typeof this.closingKm === 'number') {
+    this.travelledKm = Math.max(0, this.closingKm - this.openingKm);
+  }
+  // Calculate totals from pricePerL only when it's non-zero (legacy path)
+  // Otherwise preserve the total already set by the API layer
+  if (this.diesel.pricePerL > 0) {
+    this.diesel.total = +(this.diesel.qty * this.diesel.pricePerL).toFixed(2);
+  }
+  if (this.adblue.pricePerL > 0) {
+    this.adblue.total = +(this.adblue.qty * this.adblue.pricePerL).toFixed(2);
+  }
 });
 
+// Always re-register the model so schema changes take effect on hot-reloads.
+// In production each serverless instance starts fresh, so this is safe.
+if (mongoose.models.DailyRecord) {
+  // @ts-ignore — force-overwrite stale compiled model
+  delete mongoose.models.DailyRecord;
+}
+
 export const DailyRecord: Model<IDailyRecord> =
-  mongoose.models.DailyRecord ??
   mongoose.model<IDailyRecord>('DailyRecord', DailyRecordSchema);

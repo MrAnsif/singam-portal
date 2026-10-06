@@ -1,32 +1,45 @@
 'use client';
 // app/(dashboard)/reports/page.tsx
 // Comprehensive operational & financial reports page with print and export capabilities
-import { useState, useEffect } from 'react';
-import { PeriodSelector, type Period } from '@/components/ui/PeriodSelector';
-import { Printer, Download, FileText, CheckCircle2, TrendingUp, Gauge, Fuel } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { PeriodSelector } from '@/components/ui/PeriodSelector';
+import { useDateFilter } from '@/lib/hooks/useDateFilter';
+import { Printer, Download } from 'lucide-react';
 
 export default function ReportsPage() {
-  const [period, setPeriod] = useState<Period>('month');
+  const {
+    period,
+    setPeriod,
+    dateRange,
+    handleCustomDateChange,
+    buildQueryParams,
+  } = useDateFilter('month');
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadReport() {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/reports?period=${period}`);
-        const json = await res.json();
-        if (json.success) {
-          setData(json.data.summary);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const loadReport = useCallback(async () => {
+    const queryParams = buildQueryParams();
+    if (queryParams === null) return;
+
+    setLoading(true);
+    try {
+      const url = `/api/reports${queryParams ? `?${queryParams}` : ''}`;
+      const res = await fetch(url, { cache: 'no-store' });
+      const json = await res.json();
+      if (json.success) {
+        setData(json.data.summary);
       }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
+  }, [buildQueryParams]);
+
+  useEffect(() => {
     loadReport();
-  }, [period]);
+  }, [loadReport]);
 
   const handlePrint = () => {
     window.print();
@@ -65,7 +78,12 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex items-center space-x-3">
-          <PeriodSelector selectedPeriod={period} onPeriodChange={setPeriod} />
+          <PeriodSelector
+            selectedPeriod={period}
+            dateRange={dateRange ?? undefined}
+            onPeriodChange={setPeriod}
+            onCustomDateChange={handleCustomDateChange}
+          />
           <button
             onClick={handleExportCsv}
             className="px-3 py-2 bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-xs"
@@ -93,7 +111,12 @@ export default function ReportsPage() {
             <p className="text-xs text-neutral-500">Internal Operations & Financial Performance Summary</p>
           </div>
           <div className="text-right text-xs text-neutral-500">
-            <p>Report Period: <strong className="capitalize text-neutral-900">{period}</strong></p>
+            <p>
+              Report Period:{' '}
+              <strong className="capitalize text-neutral-900">
+                {period} {dateRange ? `(${dateRange.from} to ${dateRange.to})` : ''}
+              </strong>
+            </p>
             <p>Generated: {new Date().toLocaleDateString('en-IN')}</p>
           </div>
         </div>
@@ -103,28 +126,28 @@ export default function ReportsPage() {
           <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
             <span className="text-neutral-500 font-medium">Total Operating Expense</span>
             <p className="text-2xl font-bold text-neutral-900 mt-1">
-              ₹{(data?.totalExpense || 0).toLocaleString('en-IN')}
+              {loading ? '...' : `₹${(data?.totalExpense || 0).toLocaleString('en-IN')}`}
             </p>
           </div>
 
           <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
             <span className="text-neutral-500 font-medium">Trip Bookings Revenue</span>
             <p className="text-2xl font-bold text-emerald-700 mt-1">
-              ₹{(data?.totalRevenue || 0).toLocaleString('en-IN')}
+              {loading ? '...' : `₹${(data?.totalRevenue || 0).toLocaleString('en-IN')}`}
             </p>
           </div>
 
           <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
             <span className="text-neutral-500 font-medium">Fleet Distance Logged</span>
             <p className="text-2xl font-bold text-blue-900 mt-1">
-              {(data?.totalKm || 0).toLocaleString('en-IN')} KM
+              {loading ? '...' : `${(data?.totalKm || 0).toLocaleString('en-IN')} KM`}
             </p>
           </div>
 
           <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
             <span className="text-neutral-500 font-medium">Fuel Efficiency Avg</span>
             <p className="text-2xl font-bold text-indigo-900 mt-1">
-              {data?.kmPerL || 0} KM/L
+              {loading ? '...' : `${data?.kmPerL || 0} KM/L`}
             </p>
           </div>
         </div>
@@ -136,27 +159,27 @@ export default function ReportsPage() {
             <div className="p-4 bg-white border border-neutral-200 rounded-xl space-y-2">
               <div className="flex justify-between">
                 <span className="text-neutral-500">Fleet Active Buses:</span>
-                <span className="font-bold">{data?.activeBuses || 0}</span>
+                <span className="font-bold">{loading ? '...' : (data?.activeBuses || 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Submitted Daily Logs:</span>
-                <span className="font-bold">{data?.totalRecords || 0}</span>
+                <span className="font-bold">{loading ? '...' : (data?.totalRecords || 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Total Diesel Litres Consumed:</span>
-                <span className="font-bold">{(data?.totalDieselL || 0).toLocaleString('en-IN')} L</span>
+                <span className="font-bold">{loading ? '...' : `${(data?.totalDieselL || 0).toLocaleString('en-IN')} L`}</span>
               </div>
             </div>
 
             <div className="p-4 bg-white border border-neutral-200 rounded-xl space-y-2">
               <div className="flex justify-between">
                 <span className="text-neutral-500">Cost Per KM:</span>
-                <span className="font-bold">₹{data?.costPerKm || 0} / KM</span>
+                <span className="font-bold">{loading ? '...' : `₹${data?.costPerKm || 0} / KM`}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Net Operational Contribution:</span>
                 <span className={`font-bold ${(data?.netContribution || 0) >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                  ₹{(data?.netContribution || 0).toLocaleString('en-IN')}
+                  {loading ? '...' : `₹${(data?.netContribution || 0).toLocaleString('en-IN')}`}
                 </span>
               </div>
             </div>

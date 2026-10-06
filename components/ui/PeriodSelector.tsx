@@ -1,7 +1,7 @@
 'use client';
 // components/ui/PeriodSelector.tsx
 // Period selector tabs + custom date range — visible filter, no modal required
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 
 export type Period =
@@ -49,6 +49,15 @@ export function PeriodSelector({
   const [showCustom, setShowCustom] = useState(currentPeriod === 'custom');
   const [customFrom, setCustomFrom] = useState(dateRange?.from ?? '');
   const [customTo, setCustomTo] = useState(dateRange?.to ?? '');
+
+  useEffect(() => {
+    setShowCustom(currentPeriod === 'custom');
+  }, [currentPeriod]);
+
+  useEffect(() => {
+    if (dateRange?.from) setCustomFrom(dateRange.from);
+    if (dateRange?.to) setCustomTo(dateRange.to);
+  }, [dateRange?.from, dateRange?.to]);
 
   const handlePeriodClick = (p: Period) => {
     if (p === 'custom') {
