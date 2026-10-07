@@ -4,7 +4,7 @@
 import { NextRequest } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { DailyRecord } from '@/lib/models';
-import { requireAuth, ok } from '@/lib/api-helpers';
+import { requireAuth, requireRole, ok } from '@/lib/api-helpers';
 import {
   startOfDay, endOfDay,
   startOfWeek, endOfWeek,
@@ -52,8 +52,11 @@ function getDateRange(period: Period, from?: string, to?: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const { error } = await requireAuth();
+  const { session, error } = await requireAuth();
   if (error) return error;
+
+  const roleError = requireRole(session.user?.role as string, ['owner', 'manager']);
+  if (roleError) return roleError;
 
   const { searchParams } = request.nextUrl;
   const period = (searchParams.get('period') as Period) ?? 'month';
@@ -141,6 +144,25 @@ export async function GET(request: NextRequest) {
     { category: 'Other', amount: data.totalOtherExpenses },
   ];
 
+  // Optional: We can group revenue by customerGroup by doing a separate aggregate on the un-winded bookings.
+  // Instead of a massive facet, let's just do a quick parallel query for it since we need it for the frontend.
+  const revenueByCustomerGroupAgg = await DailyRecord.aggregate([
+    { $match: baseFilter },
+    { $unwind: '$bookings' },
+    {
+      $group: {
+        _id: '$bookings.customerGroup',
+        revenue: { $sum: '$bookings.revenue' },
+      },
+    },
+    { $sort: { revenue: -1 } },
+  ]);
+
+  const revenueByCustomerGroup = revenueByCustomerGroupAgg.map((r) => ({
+    group: r._id || 'Unknown',
+    revenue: r.revenue,
+  }));
+
   return ok({
     period,
     dateRange: { start: start.toISOString(), end: end.toISOString() },
@@ -165,6 +187,7 @@ export async function GET(request: NextRequest) {
       percentChange,
     },
     expenseByCategory,
+    revenueByCustomerGroup,
     recentActivity: recent,
   });
 }

@@ -13,7 +13,7 @@ export default function ExpensesPage() {
     setPeriod,
     dateRange,
     handleCustomDateChange,
-    buildQueryParams,
+    queryParams,
   } = useDateFilter('month');
 
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -21,28 +21,38 @@ export default function ExpensesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
-  const loadExpenses = useCallback(async () => {
-    const queryParams = buildQueryParams();
-    if (queryParams === null) return;
-
-    setLoading(true);
-    try {
-      const url = `/api/expenses${queryParams ? `?${queryParams}` : ''}`;
-      const res = await fetch(url, { cache: 'no-store' });
-      const json = await res.json();
-      if (json.success) {
-        setExpenses(json.data.expenses || []);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [buildQueryParams]);
-
   useEffect(() => {
+    let isMounted = true;
+    
+    const loadExpenses = async () => {
+      if (queryParams === null) return;
+
+      setLoading(true);
+      try {
+        const url = `/api/expenses${queryParams ? `?${queryParams}` : ''}`;
+        const res = await fetch(url, { cache: 'no-store' });
+        const json = await res.json();
+        
+        if (!isMounted) return;
+        
+        if (json.success) {
+          setExpenses(json.data.expenses || []);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    
     loadExpenses();
-  }, [loadExpenses]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [queryParams]);
 
   const filtered = expenses.filter((e) => {
     const matchesSearch =

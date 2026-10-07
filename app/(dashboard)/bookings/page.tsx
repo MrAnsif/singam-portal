@@ -13,35 +13,45 @@ export default function BookingsPage() {
     setPeriod,
     dateRange,
     handleCustomDateChange,
-    buildQueryParams,
+    queryParams,
   } = useDateFilter('month');
 
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const loadBookings = useCallback(async () => {
-    const queryParams = buildQueryParams();
-    if (queryParams === null) return;
-
-    setLoading(true);
-    try {
-      const url = `/api/bookings${queryParams ? `?${queryParams}` : ''}`;
-      const res = await fetch(url, { cache: 'no-store' });
-      const json = await res.json();
-      if (json.success) {
-        setBookings(json.data.bookings || []);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [buildQueryParams]);
-
   useEffect(() => {
+    let isMounted = true;
+    
+    const loadBookings = async () => {
+      if (queryParams === null) return;
+
+      setLoading(true);
+      try {
+        const url = `/api/bookings${queryParams ? `?${queryParams}` : ''}`;
+        const res = await fetch(url, { cache: 'no-store' });
+        const json = await res.json();
+        
+        if (!isMounted) return;
+        
+        if (json.success) {
+          setBookings(json.data.bookings || []);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    
     loadBookings();
-  }, [loadBookings]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [queryParams]);
 
   // Filter by search term client-side (name / plate / reference)
   const filtered = bookings.filter(
@@ -74,8 +84,8 @@ export default function BookingsPage() {
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
         <div className="p-4 bg-white rounded-xl border border-neutral-200 shadow-xs flex items-center space-x-4">
-          <div className="p-2.5 bg-emerald-50 rounded-xl">
-            <Ticket className="w-5 h-5 text-emerald-600" />
+          <div className="p-2.5 bg-success-50 rounded-xl">
+            <Ticket className="w-5 h-5 text-success-600" />
           </div>
           <div>
             <span className="text-neutral-500 font-medium block">Total Bookings</span>
@@ -84,12 +94,12 @@ export default function BookingsPage() {
         </div>
 
         <div className="p-4 bg-white rounded-xl border border-neutral-200 shadow-xs flex items-center space-x-4">
-          <div className="p-2.5 bg-emerald-50 rounded-xl">
-            <TrendingUp className="w-5 h-5 text-emerald-600" />
+          <div className="p-2.5 bg-success-50 rounded-xl">
+            <TrendingUp className="w-5 h-5 text-success-600" />
           </div>
           <div>
             <span className="text-neutral-500 font-medium block">Gross Revenue</span>
-            <p className="text-xl font-bold text-emerald-700 mt-0.5">₹{totalRevenue.toLocaleString('en-IN')}</p>
+            <p className="text-xl font-bold text-success-700 mt-0.5">₹{totalRevenue.toLocaleString('en-IN')}</p>
           </div>
         </div>
       </div>
@@ -149,7 +159,7 @@ export default function BookingsPage() {
                   <td className="py-3 px-4 font-bold text-neutral-900">{b.busPlate}</td>
                   <td className="py-3 px-4 font-semibold text-neutral-800">{b.customerGroup}</td>
                   <td className="py-3 px-4 text-neutral-500">{b.reference}</td>
-                  <td className="py-3 px-4 text-right font-bold text-emerald-700">
+                  <td className="py-3 px-4 text-right font-bold text-success-700">
                     ₹{(b.revenue || 0).toLocaleString('en-IN')}
                   </td>
                   <td className="py-3 px-4 text-neutral-400 italic">{b.notes || '—'}</td>
@@ -163,7 +173,7 @@ export default function BookingsPage() {
         {!loading && filtered.length > 0 && (
           <div className="border-t border-neutral-200 bg-neutral-50 px-4 py-3 flex items-center justify-between text-xs font-semibold text-neutral-700">
             <span>{filtered.length} booking{filtered.length !== 1 ? 's' : ''}</span>
-            <span className="text-emerald-700">Total Revenue: ₹{totalRevenue.toLocaleString('en-IN')}</span>
+            <span className="text-success-700">Total Revenue: ₹{totalRevenue.toLocaleString('en-IN')}</span>
           </div>
         )}
       </div>

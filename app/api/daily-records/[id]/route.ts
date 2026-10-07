@@ -9,6 +9,7 @@ import { requireAuth, requireRole, ok, fail } from '@/lib/api-helpers';
 import { z } from 'zod';
 
 const UpdateRecordSchema = z.object({
+  date: z.string().optional(),
   travelledKm: z.number().min(0).optional(),
   driverId: z.string().nullable().optional(),
   attendantId: z.string().nullable().optional(),
@@ -88,6 +89,7 @@ export async function PATCH(
     updatedBy: session!.user.id,
   };
 
+  if (parsed.data.date !== undefined) updateData.date = new Date(parsed.data.date);
   if (parsed.data.travelledKm !== undefined) updateData.travelledKm = parsed.data.travelledKm;
   if (parsed.data.driverId !== undefined) updateData.driverId = parsed.data.driverId;
   if (parsed.data.attendantId !== undefined) updateData.attendantId = parsed.data.attendantId;

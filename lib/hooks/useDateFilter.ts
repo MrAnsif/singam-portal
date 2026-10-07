@@ -32,12 +32,14 @@ export function useDateFilter(initialPeriod: Period = 'month') {
     setCustomTo(to);
   }, []);
 
-  const buildQueryParams = useCallback(() => {
-    const range = periodToDateRange(period, customFrom, customTo);
-    if (period === 'custom' && !range) return null; // waiting for user to click apply with both dates
-    if (!range) return '';
-    return `from=${range.from}&to=${range.to}`;
-  }, [period, customFrom, customTo]);
+  let queryParams: string | null = null;
+  const range = periodToDateRange(period, customFrom, customTo);
+  if (period !== 'custom' || range) {
+    queryParams = `period=${period}`;
+    if (range) {
+      queryParams += `&from=${range.from}&to=${range.to}`;
+    }
+  }
 
   return {
     period,
@@ -46,7 +48,7 @@ export function useDateFilter(initialPeriod: Period = 'month') {
     customTo,
     dateRange,
     handleCustomDateChange,
-    buildQueryParams,
+    queryParams,
     isCustomReady: period !== 'custom' || (!!customFrom && !!customTo),
   };
 }

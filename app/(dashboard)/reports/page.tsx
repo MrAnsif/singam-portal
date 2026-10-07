@@ -12,34 +12,44 @@ export default function ReportsPage() {
     setPeriod,
     dateRange,
     handleCustomDateChange,
-    buildQueryParams,
+    queryParams,
   } = useDateFilter('month');
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadReport = useCallback(async () => {
-    const queryParams = buildQueryParams();
-    if (queryParams === null) return;
-
-    setLoading(true);
-    try {
-      const url = `/api/reports${queryParams ? `?${queryParams}` : ''}`;
-      const res = await fetch(url, { cache: 'no-store' });
-      const json = await res.json();
-      if (json.success) {
-        setData(json.data.summary);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [buildQueryParams]);
-
   useEffect(() => {
+    let isMounted = true;
+    
+    const loadReport = async () => {
+      if (queryParams === null) return;
+
+      setLoading(true);
+      try {
+        const url = `/api/reports${queryParams ? `?${queryParams}` : ''}`;
+        const res = await fetch(url, { cache: 'no-store' });
+        const json = await res.json();
+        
+        if (!isMounted) return;
+        
+        if (json.success) {
+          setData(json.data.summary);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    
     loadReport();
-  }, [loadReport]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [queryParams]);
 
   const handlePrint = () => {
     window.print();
@@ -132,7 +142,7 @@ export default function ReportsPage() {
 
           <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
             <span className="text-neutral-500 font-medium">Trip Bookings Revenue</span>
-            <p className="text-2xl font-bold text-emerald-700 mt-1">
+            <p className="text-2xl font-bold text-success-700 mt-1">
               {loading ? '...' : `₹${(data?.totalRevenue || 0).toLocaleString('en-IN')}`}
             </p>
           </div>
@@ -178,7 +188,7 @@ export default function ReportsPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-500">Net Operational Contribution:</span>
-                <span className={`font-bold ${(data?.netContribution || 0) >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                <span className={`font-bold ${(data?.netContribution || 0) >= 0 ? 'text-success-700' : 'text-danger-700'}`}>
                   {loading ? '...' : `₹${(data?.netContribution || 0).toLocaleString('en-IN')}`}
                 </span>
               </div>

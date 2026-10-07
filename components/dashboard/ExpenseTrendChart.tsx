@@ -24,14 +24,26 @@ export function ExpenseTrendChart({ data = [] }: ExpenseTrendProps) {
     );
   }
 
+  const max = Math.max(...data.map((d) => d.amount));
+  const min = Math.min(...data.map((d) => d.amount));
+  const avg = data.reduce((s, d) => s + d.amount, 0) / data.length;
+  // Calculate percentage from top of graph to bottom (max is top, min is bottom)
+  const offsetPercent = max === min ? 50 : ((max - avg) / (max - min)) * 100;
+
   return (
     <div className="h-48 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
-            <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+            <linearGradient id="splitStroke" x1="0" y1="0" x2="0" y2="1">
+              <stop offset={`${offsetPercent}%`} stopColor="var(--color-danger-200)" stopOpacity={1} />
+              <stop offset={`${offsetPercent}%`} stopColor="var(--color-success-200)" stopOpacity={1} />
+            </linearGradient>
+            <linearGradient id="splitFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--color-danger-200)" stopOpacity={0.3} />
+              <stop offset={`${offsetPercent}%`} stopColor="var(--color-danger-200)" stopOpacity={0.05} />
+              <stop offset={`${offsetPercent}%`} stopColor="var(--color-success-200)" stopOpacity={0.1} />
+              <stop offset="100%" stopColor="var(--color-success-200)" stopOpacity={0.0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -61,10 +73,10 @@ export function ExpenseTrendChart({ data = [] }: ExpenseTrendProps) {
           <Area
             type="monotone"
             dataKey="amount"
-            stroke="#2563eb"
+            stroke="url(#splitStroke)"
             strokeWidth={2}
             fillOpacity={1}
-            fill="url(#expenseGradient)"
+            fill="url(#splitFill)"
           />
         </AreaChart>
       </ResponsiveContainer>

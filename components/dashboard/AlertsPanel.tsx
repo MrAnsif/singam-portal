@@ -29,7 +29,7 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
           <AlertTriangle className="w-5 h-5 text-amber-600" />
           <h3 className="font-semibold text-neutral-900">Needs Attention</h3>
         </div>
-        <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-medium">
+        <span className="bg-neutral-50 text-neutral-900 text-xs px-2 py-0.5 rounded-full font-medium">
           {alerts.length} alert{alerts.length > 1 ? 's' : ''}
         </span>
       </div>
@@ -42,13 +42,12 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
           return (
             <div
               key={alert.id}
-              className={`p-3 rounded-lg border text-xs flex items-start space-x-2.5 ${
-                isDanger
+              className={`p-3 rounded-lg border text-xs flex items-start space-x-2.5 ${isDanger
                   ? 'bg-rose-50 border-rose-200 text-rose-900'
                   : isWarning
-                  ? 'bg-amber-50 border-amber-200 text-amber-900'
-                  : 'bg-blue-50 border-blue-200 text-blue-900'
-              }`}
+                    ? 'bg-amber-50 border-amber-200 text-amber-900'
+                    : 'bg-blue-50 border-blue-200 text-blue-900'
+                }`}
             >
               {isDanger ? (
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />

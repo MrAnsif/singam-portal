@@ -14,34 +14,44 @@ export default function RecordsPage() {
     setPeriod,
     dateRange,
     handleCustomDateChange,
-    buildQueryParams,
+    queryParams,
   } = useDateFilter('month');
 
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadRecords = useCallback(async () => {
-    const queryParams = buildQueryParams();
-    if (queryParams === null) return;
-
-    setLoading(true);
-    try {
-      const url = `/api/daily-records?${queryParams ? `${queryParams}&` : ''}limit=500`;
-      const res = await fetch(url, { cache: 'no-store' });
-      const json = await res.json();
-      if (json.success) {
-        setRecords(json.data.records || []);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [buildQueryParams]);
-
   useEffect(() => {
+    let isMounted = true;
+    
+    const loadRecords = async () => {
+      if (queryParams === null) return;
+
+      setLoading(true);
+      try {
+        const url = `/api/daily-records?${queryParams ? `${queryParams}&` : ''}limit=500`;
+        const res = await fetch(url, { cache: 'no-store' });
+        const json = await res.json();
+        
+        if (!isMounted) return;
+        
+        if (json.success) {
+          setRecords(json.data.records || []);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    
     loadRecords();
-  }, [loadRecords]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [queryParams]);
 
   return (
     <div className="space-y-6">

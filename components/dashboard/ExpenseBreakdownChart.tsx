@@ -3,10 +3,8 @@
 // Horizontal bar chart showing expense breakdown by category using Recharts
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
+  PieChart,
+  Pie,
   Tooltip,
   Cell,
 } from 'recharts';
@@ -35,39 +33,45 @@ export function ExpenseBreakdownChart({ data }: ExpenseBreakdownProps) {
 
   return (
     <div className="space-y-3">
-      <div className="h-48 w-full">
+      <div className="h-48 w-full relative flex justify-center">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            layout="vertical"
-            data={formattedData}
-            margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
-          >
-            <XAxis type="number" hide />
-            <YAxis
-              dataKey="category"
-              type="category"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: '#475569' }}
-              width={65}
-            />
+          <PieChart>
+            <Pie
+              data={formattedData}
+              cx="50%"
+              cy="50%"
+              innerRadius={55}
+              outerRadius={80}
+              paddingAngle={5}
+              dataKey="amount"
+              nameKey="category"
+              stroke="none"
+            >
+              {formattedData.map((_, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
             <Tooltip
-              formatter={(val: any) => [val ? `₹${Number(val).toLocaleString('en-IN')}` : '₹0', 'Amount']}
+              formatter={(val: any, name: any) => [val ? `₹${Number(val).toLocaleString('en-IN')}` : '₹0', name]}
               contentStyle={{
-                backgroundColor: '#0f172a',
+                backgroundColor: 'oklch(0.14 0 0)',
                 borderRadius: '8px',
                 border: 'none',
                 color: '#fff',
                 fontSize: '12px',
               }}
+              itemStyle={{ color: '#e2e8f0' }}
             />
-            <Bar dataKey="amount" radius={[0, 4, 4, 0]} barSize={20}>
-              {formattedData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Bar>
-          </BarChart>
+          </PieChart>
         </ResponsiveContainer>
+        
+        {/* Center label for donut */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-xs text-neutral-400 font-medium">Total</span>
+          <span className="text-sm font-bold text-neutral-900">
+            ₹{(total >= 100000 ? (total / 100000).toFixed(1) + 'L' : total >= 1000 ? (total / 1000).toFixed(1) + 'k' : total)}
+          </span>
+        </div>
       </div>
 
       {/* Legend list */}

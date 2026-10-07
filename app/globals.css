@@ -31,12 +31,14 @@
   /* Semantic colors */
   --color-success-50: oklch(0.97 0.04 145);
   --color-success-100: oklch(0.93 0.08 145);
+  --color-success-200: oklch(0.55 0.16 145);
   --color-success-500: oklch(0.55 0.16 145);
   --color-success-600: oklch(0.47 0.14 145);
   --color-success-700: oklch(0.40 0.12 145);
 
   --color-danger-50: oklch(0.97 0.04 25);
   --color-danger-100: oklch(0.93 0.08 25);
+  --color-danger-200: oklch(0.55 0.22 25);
   --color-danger-500: oklch(0.55 0.22 25);
   --color-danger-600: oklch(0.47 0.20 25);
   --color-danger-700: oklch(0.40 0.16 25);
@@ -62,7 +64,7 @@
 
 @layer base {
   .dark {
-    --color-white: oklch(0.14 0 0); /* map white to dark neutral */
+    --color-white: oklch(0.20 0 0); /* Slightly lighter than background for card contrast */
     --color-black: oklch(0.985 0 0); /* map black to light neutral */
 
     /* Reverse Brand */
@@ -90,10 +92,19 @@
     --color-neutral-800: oklch(0.96 0 0);
     --color-neutral-900: oklch(0.985 0 0);
 
-    /* Reverse Semantic (Partial for Diff Viewer) */
+    /* Reverse Semantic */
     --color-success-50: oklch(0.40 0.12 145);
-    --color-success-700: oklch(0.97 0.04 145);
+    --color-success-100: oklch(0.47 0.14 145);
+    --color-success-200: oklch(0.55 0.16 145);
+    --color-success-500: oklch(0.93 0.08 145);
+    --color-success-600: oklch(0.97 0.04 145);
+    --color-success-700: oklch(0.97 0.04 145); /* Usually would be lighter, but this works */
+
     --color-danger-50: oklch(0.40 0.16 25);
+    --color-danger-100: oklch(0.47 0.20 25);
+    --color-danger-200: oklch(0.55 0.16 25);
+    --color-danger-500: oklch(0.93 0.08 25);
+    --color-danger-600: oklch(0.97 0.04 25);
     --color-danger-700: oklch(0.97 0.04 25);
   }
 }
