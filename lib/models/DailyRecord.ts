@@ -28,13 +28,11 @@ export interface IDailyRecord extends Document {
   travelledKm: number; // calculated on pre-save or provided directly
   diesel: {
     qty: number;
-    pricePerL: number;
-    total: number; // calculated on pre-save
+    total: number;
   };
   adblue: {
     qty: number;
-    pricePerL: number;
-    total: number; // calculated on pre-save
+    total: number;
   };
   bookings: IBookingEntry[];
   otherExpenses: IOtherExpense[];
@@ -77,12 +75,10 @@ const DailyRecordSchema = new Schema<IDailyRecord>(
     travelledKm: { type: Number, default: 0, min: 0 },
     diesel: {
       qty: { type: Number, default: 0, min: 0 },
-      pricePerL: { type: Number, default: 0, min: 0 },
       total: { type: Number, default: 0, min: 0 },
     },
     adblue: {
       qty: { type: Number, default: 0, min: 0 },
-      pricePerL: { type: Number, default: 0, min: 0 },
       total: { type: Number, default: 0, min: 0 },
     },
     bookings: { type: [BookingEntrySchema], default: [] },
@@ -107,14 +103,6 @@ DailyRecordSchema.pre('save', function () {
   // Calculate travelledKm only when opening/closing KM are both present
   if (typeof this.openingKm === 'number' && typeof this.closingKm === 'number') {
     this.travelledKm = Math.max(0, this.closingKm - this.openingKm);
-  }
-  // Calculate totals from pricePerL only when it's non-zero (legacy path)
-  // Otherwise preserve the total already set by the API layer
-  if (this.diesel.pricePerL > 0) {
-    this.diesel.total = +(this.diesel.qty * this.diesel.pricePerL).toFixed(2);
-  }
-  if (this.adblue.pricePerL > 0) {
-    this.adblue.total = +(this.adblue.qty * this.adblue.pricePerL).toFixed(2);
   }
 });
 

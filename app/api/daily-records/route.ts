@@ -139,7 +139,6 @@ export async function POST(request: NextRequest) {
   }
 
   // Map simplified UI fields to the database schema
-  // pricePerL is stored as 0 (we use total directly)
   const record = await DailyRecord.create({
     date: new Date(date),
     busId: parsed.data.busId,
@@ -149,12 +148,10 @@ export async function POST(request: NextRequest) {
     // openingKm / closingKm are omitted — not tracked in the simplified flow
     diesel: {
       qty: parsed.data.diesel.qty,
-      pricePerL: 0,
       total: parsed.data.diesel.total,
     },
     adblue: {
       qty: parsed.data.adblue.qty,
-      pricePerL: 0,
       total: parsed.data.adblue.total,
     },
     // Normalise bookings — cost always 0 (not tracked in manager flow)

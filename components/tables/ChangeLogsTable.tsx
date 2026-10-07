@@ -5,14 +5,23 @@ import { format } from 'date-fns';
 import { FileEdit, Calendar, User, Eye, ArrowRight, Trash2, Bus, Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
+interface AuditSnapshot {
+  date?: string;
+  createdAt?: string;
+  status?: string;
+  notes?: string;
+  busId?: string | { _id: string; name?: string; plateNumber?: string };
+  [key: string]: unknown;
+}
+
 interface AuditLog {
   _id: string;
   recordId: string;
   recordType: string;
   changedBy: { _id: string; name: string; role: string };
   changedAt: string;
-  before: Record<string, unknown>;
-  after: Record<string, unknown>;
+  before: AuditSnapshot;
+  after: AuditSnapshot;
 }
 
 function safeFormatDate(dateVal: unknown, fmt: string): string {
@@ -240,9 +249,9 @@ export function ChangeLogsTable() {
               <div className="border border-neutral-200 rounded-lg overflow-hidden">
                 <div className="grid grid-cols-12 bg-neutral-100/50 border-b border-neutral-200 text-xs font-bold text-neutral-500 uppercase tracking-wider">
                   <div className="col-span-3 p-3">Field</div>
-                  <div className="col-span-4 p-3 text-red-600">Old Value</div>
+                  <div className="col-span-4 p-3 text-neutral-500">Old Value</div>
                   <div className="col-span-1 flex items-center justify-center border-x border-neutral-200/50"></div>
-                  <div className="col-span-4 p-3 text-green-600">New Value</div>
+                  <div className="col-span-4 p-3 text-neutral-500">New Value</div>
                 </div>
                 
                 <div className="divide-y divide-neutral-100 bg-white">
@@ -251,16 +260,16 @@ export function ChangeLogsTable() {
                       <div className="col-span-3 p-3 font-mono text-xs text-neutral-600 font-medium border-r border-neutral-100 bg-neutral-50/50 flex items-center">
                         {diff.key}
                       </div>
-                      <div className="col-span-4 p-3 bg-danger-50 text-danger-700">
+                      <div className="col-span-4 p-3 text-neutral-500">
                         <pre className="whitespace-pre-wrap font-mono text-xs break-words">
                           {formatValue(diff.oldValue)}
                         </pre>
                       </div>
-                      <div className="col-span-1 flex items-center justify-center bg-neutral-50">
+                      <div className="col-span-1 flex items-center justify-center bg-neutral-50/50 border-x border-neutral-100">
                         <ArrowRight className="w-4 h-4 text-neutral-300" />
                       </div>
-                      <div className="col-span-4 p-3 bg-success-50 text-success-700">
-                        <pre className="whitespace-pre-wrap font-mono text-xs break-words">
+                      <div className="col-span-4 p-3 text-neutral-900">
+                        <pre className="whitespace-pre-wrap font-mono text-xs break-words font-medium">
                           {formatValue(diff.newValue)}
                         </pre>
                       </div>

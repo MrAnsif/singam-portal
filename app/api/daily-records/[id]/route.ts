@@ -100,12 +100,10 @@ export async function PATCH(
   if (parsed.data.otherExpenses !== undefined) updateData.otherExpenses = parsed.data.otherExpenses;
   if (parsed.data.diesel !== undefined) {
     updateData['diesel.qty'] = parsed.data.diesel.qty ?? existing.diesel.qty;
-    updateData['diesel.pricePerL'] = 0;
     updateData['diesel.total'] = parsed.data.diesel.total ?? existing.diesel.total;
   }
   if (parsed.data.adblue !== undefined) {
     updateData['adblue.qty'] = parsed.data.adblue.qty ?? existing.adblue.qty;
-    updateData['adblue.pricePerL'] = 0;
     updateData['adblue.total'] = parsed.data.adblue.total ?? existing.adblue.total;
   }
 
