@@ -15,6 +15,7 @@ import {
   BarChart3,
   Settings,
   X,
+  History,
 } from 'lucide-react';
 
 interface NavItem {
@@ -37,6 +38,7 @@ const OWNER_NAV: NavItem[] = [
   { href: '/buses', label: 'Buses', icon: Bus },
   { href: '/staff', label: 'Staff', icon: Users },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/change-logs', label: 'Change Logs', icon: History },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

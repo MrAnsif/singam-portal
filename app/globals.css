@@ -89,6 +89,12 @@
     --color-neutral-700: oklch(0.90 0 0);
     --color-neutral-800: oklch(0.96 0 0);
     --color-neutral-900: oklch(0.985 0 0);
+
+    /* Reverse Semantic (Partial for Diff Viewer) */
+    --color-success-50: oklch(0.40 0.12 145);
+    --color-success-700: oklch(0.97 0.04 145);
+    --color-danger-50: oklch(0.40 0.16 25);
+    --color-danger-700: oklch(0.97 0.04 25);
   }
 }
 

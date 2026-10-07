@@ -73,7 +73,10 @@ export async function PATCH(
 
   await connectDB();
 
-  const existing = await DailyRecord.findById(id);
+  const existing = await DailyRecord.findById(id)
+    .populate('busId', 'plateNumber name')
+    .populate('driverId', 'name')
+    .populate('attendantId', 'name');
   if (!existing) return fail('Record not found', 404);
 
   // Write audit log before update
@@ -92,7 +95,7 @@ export async function PATCH(
   if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
   if (parsed.data.bookings !== undefined) {
     // Normalise bookings: cost is always 0 in the manager flow
-    updateData.bookings = parsed.data.bookings.map((b: any) => ({ ...b, cost: 0 }));
+    updateData.bookings = parsed.data.bookings.map((b: Record<string, unknown>) => ({ ...b, cost: 0 }));
   }
   if (parsed.data.otherExpenses !== undefined) updateData.otherExpenses = parsed.data.otherExpenses;
   if (parsed.data.diesel !== undefined) {
