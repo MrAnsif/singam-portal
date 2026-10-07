@@ -24,7 +24,7 @@ export function Header({ session, onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-neutral-200 flex items-center px-4 gap-4 shrink-0">
+    <header className="h-16 bg-white border-b border-neutral-200 flex items-center px-4 gap-4 shrink-0 print:hidden">
       {/* Hamburger (mobile/tablet) */}
       <button
         onClick={onMenuClick}

@@ -9,6 +9,7 @@ import { requireAuth, requireRole, ok, fail } from '@/lib/api-helpers';
 import { z } from 'zod';
 
 const UpdateBusSchema = z.object({
+  plateNumber: z.string().optional(),
   name: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
   defaultDriverId: z.string().nullable().optional(),

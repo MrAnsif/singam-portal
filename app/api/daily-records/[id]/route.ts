@@ -109,7 +109,7 @@ export async function PATCH(
   const updated = await DailyRecord.findByIdAndUpdate(
     id,
     { $set: updateData },
-    { new: true, runValidators: true }
+    { returnDocument: 'after', runValidators: true }
   )
     .populate('busId', 'plateNumber name')
     .populate('driverId', 'name')
@@ -144,7 +144,7 @@ export async function DELETE(
   const record = await DailyRecord.findByIdAndUpdate(
     id,
     { status: 'edited', notes: '[DELETED]', updatedBy: session!.user.id },
-    { new: true }
+    { returnDocument: 'after' }
   );
 
   if (!record) return fail('Record not found', 404);

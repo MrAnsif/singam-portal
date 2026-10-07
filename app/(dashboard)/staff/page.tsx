@@ -14,7 +14,6 @@ export const metadata: Metadata = {
 export default async function StaffPage() {
   await connectDB();
   const staff = await Staff.find({})
-    .populate('busId', 'plateNumber')
     .sort({ name: 1 })
     .lean();
 

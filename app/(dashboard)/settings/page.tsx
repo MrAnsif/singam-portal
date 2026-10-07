@@ -2,8 +2,26 @@
 // app/(dashboard)/settings/page.tsx
 // Owner Settings Page for Fleet Buses, Staff, and System Configurations
 import { useState, useEffect } from 'react';
-import { Bus, Users, ShieldCheck, Plus, Check } from 'lucide-react';
+import { Bus, Users, Plus, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 
 export default function SettingsPage() {
   const [buses, setBuses] = useState<any[]>([]);
@@ -21,6 +39,87 @@ export default function SettingsPage() {
   const [staffRole, setStaffRole] = useState<'driver' | 'attendant'>('driver');
   const [staffSalary, setStaffSalary] = useState<number | ''>('');
   const [addingStaff, setAddingStaff] = useState(false);
+
+  // Edit / Delete State
+  const [editingBus, setEditingBus] = useState<any>(null);
+  const [deletingBus, setDeletingBus] = useState<any>(null);
+  const [editingStaff, setEditingStaff] = useState<any>(null);
+  const [deletingStaff, setDeletingStaff] = useState<any>(null);
+
+  const handleUpdateBus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`/api/buses/${editingBus._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plateNumber: editingBus.plateNumber, name: editingBus.name }),
+      });
+      if (res.ok) {
+        toast.success('Bus updated successfully');
+        setEditingBus(null);
+        fetchData();
+      } else {
+        toast.error('Failed to update bus');
+      }
+    } catch {
+      toast.error('Failed to connect to server');
+    }
+  };
+
+  const handleDeleteBus = async () => {
+    try {
+      const res = await fetch(`/api/buses/${deletingBus._id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Bus deleted successfully');
+        setDeletingBus(null);
+        fetchData();
+      } else {
+        toast.error('Failed to delete bus');
+      }
+    } catch {
+      toast.error('Failed to connect to server');
+    }
+  };
+
+  const handleUpdateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`/api/staff/${editingStaff._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingStaff.name,
+          phone: editingStaff.phone,
+          role: editingStaff.role,
+          monthlySalary: Number(editingStaff.monthlySalary) || 0,
+        }),
+      });
+      if (res.ok) {
+        toast.success('Staff updated successfully');
+        setEditingStaff(null);
+        fetchData();
+      } else {
+        toast.error('Failed to update staff');
+      }
+    } catch {
+      toast.error('Failed to connect to server');
+    }
+  };
+
+  const handleDeleteStaff = async () => {
+    try {
+      const res = await fetch(`/api/staff/${deletingStaff._id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Staff deleted successfully');
+        setDeletingStaff(null);
+        fetchData();
+      } else {
+        toast.error('Failed to delete staff');
+      }
+    } catch {
+      toast.error('Failed to connect to server');
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -161,9 +260,14 @@ export default function SettingsPage() {
                   <span className="font-bold text-neutral-900">{b.plateNumber}</span>
                   {b.name && <span className="text-neutral-500 ml-1">({b.name})</span>}
                 </div>
-                <span className="bg-emerald-50 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full uppercase font-bold">
-                  {b.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setEditingBus(b)} className="p-1 text-neutral-400 hover:text-brand-600 transition-colors" title="Edit Bus">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setDeletingBus(b)} className="p-1 text-neutral-400 hover:text-red-600 transition-colors" title="Delete Bus">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -230,12 +334,153 @@ export default function SettingsPage() {
                   <span className="font-bold text-neutral-900">{s.name}</span>
                   <span className="capitalize text-neutral-500 ml-1.5">({s.role})</span>
                 </div>
-                <span className="font-medium text-neutral-700">₹{(s.monthlySalary || 0).toLocaleString('en-IN')}/mo</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-neutral-700">₹{(s.monthlySalary || 0).toLocaleString('en-IN')}/mo</span>
+                  <button onClick={() => setEditingStaff(s)} className="p-1 text-neutral-400 hover:text-purple-600 transition-colors" title="Edit Staff">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setDeletingStaff(s)} className="p-1 text-neutral-400 hover:text-red-600 transition-colors" title="Delete Staff">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Modals for Edit and Delete */}
+      
+      {/* Bus Edit Dialog */}
+      <Dialog open={!!editingBus} onOpenChange={(open: boolean) => !open && setEditingBus(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Bus</DialogTitle>
+          </DialogHeader>
+          {editingBus && (
+            <form onSubmit={handleUpdateBus} className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-neutral-700">Plate Number</label>
+                <input
+                  type="text"
+                  value={editingBus.plateNumber}
+                  onChange={(e) => setEditingBus({ ...editingBus, plateNumber: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-neutral-700">Bus Name (Optional)</label>
+                <input
+                  type="text"
+                  value={editingBus.name || ''}
+                  onChange={(e) => setEditingBus({ ...editingBus, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm"
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditingBus(null)}>Cancel</Button>
+                <Button type="submit" className="bg-brand-600 hover:bg-brand-700 text-white">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bus Delete Alert */}
+      <AlertDialog open={!!deletingBus} onOpenChange={(open: boolean) => !open && setDeletingBus(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will deactivate the bus <strong>{deletingBus?.plateNumber}</strong>. Historical daily records associated with this bus will be preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBus} className="bg-red-600 hover:bg-red-700 text-white">
+              Delete Bus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Staff Edit Dialog */}
+      <Dialog open={!!editingStaff} onOpenChange={(open: boolean) => !open && setEditingStaff(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Staff Member</DialogTitle>
+          </DialogHeader>
+          {editingStaff && (
+            <form onSubmit={handleUpdateStaff} className="space-y-4 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-neutral-700">Full Name</label>
+                  <input
+                    type="text"
+                    value={editingStaff.name}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, name: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-neutral-700">Phone Number</label>
+                  <input
+                    type="text"
+                    value={editingStaff.phone || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, phone: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-neutral-700">Role</label>
+                  <select
+                    value={editingStaff.role}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, role: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm bg-white"
+                  >
+                    <option value="driver">Driver</option>
+                    <option value="attendant">Attendant</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-neutral-700">Monthly Salary (₹)</label>
+                  <input
+                    type="number"
+                    value={editingStaff.monthlySalary || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, monthlySalary: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 text-sm"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditingStaff(null)}>Cancel</Button>
+                <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Staff Delete Alert */}
+      <AlertDialog open={!!deletingStaff} onOpenChange={(open: boolean) => !open && setDeletingStaff(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Staff Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete <strong>{deletingStaff?.name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteStaff} className="bg-red-600 hover:bg-red-700 text-white">
+              Delete Staff
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }

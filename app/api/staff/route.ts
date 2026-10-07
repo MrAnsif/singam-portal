@@ -11,7 +11,6 @@ const CreateStaffSchema = z.object({
   name: z.string().min(1).max(100),
   phone: z.string().optional(),
   role: z.enum(['driver', 'attendant']),
-  busId: z.string().optional(),
   monthlySalary: z.number().min(0).default(0),
 });
 
@@ -22,7 +21,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const role = searchParams.get('role');
 
-  const filter: Record<string, unknown> = { status: 'active' };
+  const filter: Record<string, unknown> = {};
   if (role && ['driver', 'attendant'].includes(role)) {
     filter.role = role;
   }
@@ -30,7 +29,6 @@ export async function GET(request: NextRequest) {
   await connectDB();
   const staff = await Staff.find(filter)
     .sort({ name: 1 })
-    .populate('busId', 'plateNumber name')
     .lean();
 
   return ok(staff);

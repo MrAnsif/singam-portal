@@ -10,9 +10,8 @@ import { z } from 'zod';
 const UpdateStaffSchema = z.object({
   name: z.string().min(1).optional(),
   phone: z.string().optional(),
-  busId: z.string().nullable().optional(),
+  role: z.enum(['driver', 'attendant']).optional(),
   monthlySalary: z.number().min(0).optional(),
-  status: z.enum(['active', 'inactive']).optional(),
 });
 
 export async function GET(
@@ -25,9 +24,7 @@ export async function GET(
   const { id } = await ctx.params;
   await connectDB();
 
-  const staff = await Staff.findById(id)
-    .populate('busId', 'plateNumber name')
-    .lean();
+  const staff = await Staff.findById(id).lean();
 
   if (!staff) return fail('Staff member not found', 404);
   return ok(staff);
@@ -75,12 +72,8 @@ export async function DELETE(
   const { id } = await ctx.params;
   await connectDB();
 
-  const staff = await Staff.findByIdAndUpdate(
-    id,
-    { status: 'inactive' },
-    { new: true }
-  );
+  const staff = await Staff.findByIdAndDelete(id);
   if (!staff) return fail('Staff member not found', 404);
 
-  return ok({ message: 'Staff member deactivated' });
+  return ok({ message: 'Staff member deleted' });
 }

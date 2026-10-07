@@ -70,7 +70,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
       <aside
         className={`
           fixed top-0 left-0 h-full w-60 bg-white border-r border-neutral-200
-          flex flex-col z-30 transition-transform duration-200
+          flex flex-col z-30 transition-transform duration-200 print:hidden
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
         `}
