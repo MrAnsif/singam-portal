@@ -55,6 +55,14 @@ export function PeriodSelector({
 }: PeriodSelectorProps) {
   const currentPeriod = selectedPeriod || value || 'month';
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const parseDateStr = (dateStr?: string) => {
     if (!dateStr) return undefined;
@@ -106,7 +114,8 @@ export function PeriodSelector({
 
   return (
     <div
-      className="flex flex-wrap gap-1 p-1 bg-neutral-100 rounded-lg w-fit"
+      className="flex overflow-x-auto gap-1 p-1 bg-neutral-100 rounded-lg w-full md:w-fit sm:no-scrollbar"
+      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       role="tablist"
       aria-label="Select time period"
       id={id}
@@ -159,7 +168,7 @@ export function PeriodSelector({
             defaultMonth={selectedRange?.from || new Date()}
             selected={selectedRange}
             onSelect={handleCustomRangeSelect}
-            numberOfMonths={2}
+            numberOfMonths={isMobile ? 1 : 2}
           />
         </PopoverContent>
       </Popover>

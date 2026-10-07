@@ -46,10 +46,10 @@ export function OwnerDashboard({ session }: OwnerDashboardProps) {
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchStats = async () => {
       if (queryParams === null) return;
-      
+
       setLoading(true);
       try {
         const url = `/api/dashboard/stats${queryParams ? `?${queryParams}` : ''}`;
@@ -73,7 +73,7 @@ export function OwnerDashboard({ session }: OwnerDashboardProps) {
     };
 
     fetchStats();
-    
+
     return () => {
       isMounted = false;
     };
@@ -117,11 +117,10 @@ export function OwnerDashboard({ session }: OwnerDashboardProps) {
       </div>
 
       {/* Hero Gross Profit Card */}
-      <div className={`relative overflow-hidden rounded-2xl border p-6 shadow-sm ${
-        isProfit 
-          ? 'bg-gradient-to-br from-success-50 to-white border-success-100' 
+      <div className={`relative overflow-hidden rounded-2xl border p-6 shadow-sm ${isProfit
+          ? 'bg-gradient-to-br from-success-50 to-white border-success-100'
           : 'bg-gradient-to-br from-danger-50 to-white border-danger-100'
-      }`}>
+        }`}>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -146,7 +145,7 @@ export function OwnerDashboard({ session }: OwnerDashboardProps) {
               Revenue minus operational costs (Diesel, AdBlue, Other).
             </p>
           </div>
-          
+
           {/* Quick Stats within Hero */}
           <div className="flex gap-4 md:gap-8 bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/40">
             <div>
@@ -160,7 +159,7 @@ export function OwnerDashboard({ session }: OwnerDashboardProps) {
             </div>
           </div>
         </div>
-        
+
         {/* Background Decorative Element */}
         <div className={`absolute -bottom-12 -right-12 w-48 h-48 rounded-full blur-3xl opacity-30 ${isProfit ? 'bg-success-400' : 'bg-danger-400'}`}></div>
       </div>

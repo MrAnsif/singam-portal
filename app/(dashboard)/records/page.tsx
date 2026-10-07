@@ -63,7 +63,7 @@ export default function RecordsPage() {
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col items-start md:items-end gap-3">
           <PeriodSelector
             selectedPeriod={period}
             dateRange={dateRange ?? undefined}

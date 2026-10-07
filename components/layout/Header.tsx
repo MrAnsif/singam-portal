@@ -2,7 +2,7 @@
 // components/layout/Header.tsx
 // Top navigation bar — logo, search, notifications, user menu
 import { signOut } from 'next-auth/react';
-import { Menu, Bell, LogOut, ChevronDown, Search } from 'lucide-react';
+import { Menu, LogOut, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import type { Session } from 'next-auth';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -34,24 +34,7 @@ export function Header({ session, onMenuClick }: HeaderProps) {
         <Menu className="w-5 h-5" />
       </button>
 
-      {/* Search */}
-      <div className="flex-1 max-w-sm">
-        <label htmlFor="global-search" className="sr-only">
-          Search buses, staff, records
-        </label>
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none"
-            aria-hidden="true"
-          />
-          <input
-            id="global-search"
-            type="search"
-            placeholder="Search buses, staff, records…"
-            className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-neutral-200 bg-neutral-50 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white transition-colors"
-          />
-        </div>
-      </div>
+      <div className="flex-1" />
 
       {/* Right actions */}
       <div className="flex items-center gap-2 ml-auto">

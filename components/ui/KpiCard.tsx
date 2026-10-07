@@ -35,15 +35,15 @@ export function KpiCard({
     );
   }
 
-  const trendColor = (() => {
-    if (!trend) return '';
-    const direction = trend.direction ?? 'up-is-good';
-    if (trend.value === 0) return 'text-neutral-500';
-    if (direction === 'up-is-good') {
-      return trend.value > 0 ? 'text-success-600' : 'text-danger-600';
-    }
-    return trend.value > 0 ? 'text-danger-600' : 'text-success-600';
-  })();
+  // const trendColor = (() => {
+  //   if (!trend) return '';
+  //   const direction = trend.direction ?? 'up-is-good';
+  //   if (trend.value === 0) return 'text-neutral-500';
+  //   if (direction === 'up-is-good') {
+  //     return trend.value > 0 ? 'text-success-600' : 'text-danger-600';
+  //   }
+  //   return trend.value > 0 ? 'text-danger-600' : 'text-success-600';
+  // })();
 
   const TrendIcon =
     !trend || trend.value === 0
@@ -73,7 +73,7 @@ export function KpiCard({
           )}
           {trend && (
             <div
-              className={`mt-2 flex items-center gap-1 text-xs font-medium ${trendColor}`}
+              className={`mt-2 flex items-center gap-1 text-xs font-medium `}
               aria-label={`${trend.value > 0 ? 'Up' : trend.value < 0 ? 'Down' : 'No change'} ${Math.abs(trend.value).toFixed(1)}% ${trend.comparedTo}`}
             >
               <TrendIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
