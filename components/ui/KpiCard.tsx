@@ -86,7 +86,7 @@ export function KpiCard({
         </div>
         {icon && (
           <div
-            className="shrink-0 w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600"
+            className="shrink-0 w-10 h-10 flex items-center justify-center text-brand-600"
             aria-hidden="true"
           >
             {icon}

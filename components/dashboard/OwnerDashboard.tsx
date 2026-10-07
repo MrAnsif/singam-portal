@@ -16,7 +16,6 @@ import {
   Gauge,
   Fuel,
   Ticket,
-  TrendingDown,
   RefreshCw,
   Plus,
 } from 'lucide-react';
