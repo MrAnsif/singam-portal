@@ -1,13 +1,22 @@
 'use client';
 // components/forms/DailyEntryForm.tsx
 // Core operational data-entry form with auto-calculations, smart defaults, draft persistence, and duplicate checks
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookingsSection, type BookingInput } from './BookingsSection';
 import { OtherExpensesSection, type ExpenseInput } from './OtherExpensesSection';
+import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import {
   Bus,
-  Calendar,
+  Calendar as CalendarIcon,
   Gauge,
   Fuel,
   Users,
@@ -33,7 +42,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
   const [date, setDate] = useState<string>(
     initialData?.date
       ? new Date(initialData.date).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0]
+      : ''
   );
   const [busId, setBusId] = useState<string>(initialData?.busId?._id || initialData?.busId || '');
   const [driverId, setDriverId] = useState<string>(initialData?.driverId?._id || initialData?.driverId || '');
@@ -67,6 +76,11 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [draftPrompt, setDraftPrompt] = useState(false);
 
+  // Draft tracking refs — refs avoid re-renders, only read inside useEffect guards
+  const isDirty = useRef(false);
+  const draftJustRestored = useRef(false);
+  const markDirty = useCallback(() => { isDirty.current = true; }, []);
+
   // ─── Computed Totals ────────────────────────────────────────────────────────
   const dieselAmount = typeof dieselTotal === 'number' ? dieselTotal : 0;
   const adblueAmount = typeof adblueTotal === 'number' ? adblueTotal : 0;
@@ -94,15 +108,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
         if (busesData.success) setBuses(busesData.data || []);
         if (staffData.success) setStaff(staffData.data || []);
 
-        // Smart default: Select last used bus from localStorage if creating new
-        if (!isEditing && !busId) {
-          const lastBus = localStorage.getItem('singam_last_bus');
-          if (lastBus && busesData.data?.some((b: any) => b._id === lastBus)) {
-            setBusId(lastBus);
-          } else if (busesData.data?.length > 0) {
-            setBusId(busesData.data[0]._id);
-          }
-        }
+        // Smart default auto-selection removed to allow explicit choice
       } catch (err) {
         console.error('Failed to load options', err);
       } finally {
@@ -118,6 +124,12 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
 
     // Save to localStorage for smart default next time
     localStorage.setItem('singam_last_bus', busId);
+
+    // Skip auto-fill if the user just restored a draft (their saved driver/attendant take priority)
+    if (draftJustRestored.current) {
+      draftJustRestored.current = false;
+      return;
+    }
 
     const selectedBus = buses.find((b) => b._id === busId);
     if (selectedBus) {
@@ -174,6 +186,9 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
       const savedDraft = localStorage.getItem('singam_daily_entry_draft');
       if (savedDraft) {
         const parsed = JSON.parse(savedDraft);
+        // Flag so bus auto-fill effect doesn't overwrite restored driver/attendant
+        draftJustRestored.current = true;
+        isDirty.current = true;
         if (parsed.date) setDate(parsed.date);
         if (parsed.busId) setBusId(parsed.busId);
         if (parsed.driverId) setDriverId(parsed.driverId);
@@ -200,24 +215,27 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
     setDraftPrompt(false);
   };
 
-  // Save state to draft on changes (if not editing)
+  // Save state to draft on changes (if not editing) — debounced 500ms, only after user interaction
   useEffect(() => {
-    if (isEditing) return;
-    const draftData = {
-      date,
-      busId,
-      driverId,
-      attendantId,
-      travelledKm,
-      dieselQty,
-      dieselTotal,
-      adblueQty,
-      adblueTotal,
-      bookings,
-      otherExpenses,
-      notes,
-    };
-    localStorage.setItem('singam_daily_entry_draft', JSON.stringify(draftData));
+    if (isEditing || !isDirty.current) return;
+    const timer = setTimeout(() => {
+      const draftData = {
+        date,
+        busId,
+        driverId,
+        attendantId,
+        travelledKm,
+        dieselQty,
+        dieselTotal,
+        adblueQty,
+        adblueTotal,
+        bookings,
+        otherExpenses,
+        notes,
+      };
+      localStorage.setItem('singam_daily_entry_draft', JSON.stringify(draftData));
+    }, 500);
+    return () => clearTimeout(timer);
   }, [
     isEditing,
     date,
@@ -240,6 +258,11 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
 
     if (!busId) {
       toast.error('Please select a bus');
+      return;
+    }
+    
+    if (!date) {
+      toast.error('Please select a date');
       return;
     }
 
@@ -344,7 +367,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
             </label>
             <select
               value={busId}
-              onChange={(e) => setBusId(e.target.value)}
+              onChange={(e) => { setBusId(e.target.value); markDirty(); }}
               required
               disabled={loadingOptions}
               className="w-full px-3 py-2 rounded-lg border border-neutral-300 bg-white text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -362,17 +385,32 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
             <label className="block text-xs font-semibold text-neutral-700 mb-1">
               Entry Date *
             </label>
-            <div className="relative">
-              <input
-                type="date"
-                value={date}
-                max={new Date().toISOString().split('T')[0]}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className="w-full px-3 py-2 rounded-lg border border-neutral-300 bg-white text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-              <Calendar className="w-4 h-4 text-neutral-400 absolute right-3 top-2.5 pointer-events-none" />
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    'w-full justify-start text-left font-normal text-xs px-3 py-2 border border-neutral-300 bg-white shadow-none hover:bg-neutral-50 text-neutral-900',
+                    !date && 'text-neutral-500'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4 text-neutral-400 shrink-0" />
+                  {date ? format(new Date(date), 'PPP') : <span>Choose Date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date ? new Date(date) : undefined}
+                  onSelect={(d) => {
+                    setDate(d ? format(d, 'yyyy-MM-dd') : '');
+                    markDirty();
+                  }}
+                  disabled={(d) => d > new Date()}
+                  // initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
@@ -394,7 +432,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
             step="0.1"
             placeholder="e.g. 450"
             value={travelledKm}
-            onChange={(e) => setTravelledKm(e.target.value === '' ? '' : Number(e.target.value))}
+            onChange={(e) => { setTravelledKm(e.target.value === '' ? '' : Number(e.target.value)); markDirty(); }}
             className="w-full px-3 py-2 rounded-lg border border-neutral-300 bg-white text-xs text-neutral-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
           <p className="text-[11px] text-neutral-400 mt-1">Total KM covered</p>
@@ -422,7 +460,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
                 min="0"
                 placeholder="0.00"
                 value={dieselQty}
-                onChange={(e) => setDieselQty(e.target.value === '' ? '' : Number(e.target.value))}
+                onChange={(e) => { setDieselQty(e.target.value === '' ? '' : Number(e.target.value)); markDirty(); }}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-xs"
               />
             </div>
@@ -436,7 +474,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
                 min="0"
                 placeholder="0.00"
                 value={dieselTotal}
-                onChange={(e) => setDieselTotal(e.target.value === '' ? '' : Number(e.target.value))}
+                onChange={(e) => { setDieselTotal(e.target.value === '' ? '' : Number(e.target.value)); markDirty(); }}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-xs"
               />
             </div>
@@ -457,7 +495,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
                 min="0"
                 placeholder="0.00"
                 value={adblueQty}
-                onChange={(e) => setAdblueQty(e.target.value === '' ? '' : Number(e.target.value))}
+                onChange={(e) => { setAdblueQty(e.target.value === '' ? '' : Number(e.target.value)); markDirty(); }}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-xs"
               />
             </div>
@@ -471,7 +509,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
                 min="0"
                 placeholder="0.00"
                 value={adblueTotal}
-                onChange={(e) => setAdblueTotal(e.target.value === '' ? '' : Number(e.target.value))}
+                onChange={(e) => { setAdblueTotal(e.target.value === '' ? '' : Number(e.target.value)); markDirty(); }}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-xs"
               />
             </div>
@@ -493,7 +531,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
             </label>
             <select
               value={driverId}
-              onChange={(e) => setDriverId(e.target.value)}
+              onChange={(e) => { setDriverId(e.target.value); markDirty(); }}
               className="w-full px-3 py-2 rounded-lg border border-neutral-300 bg-white text-xs"
             >
               <option value="">-- Select Driver --</option>
@@ -511,7 +549,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
             </label>
             <select
               value={attendantId}
-              onChange={(e) => setAttendantId(e.target.value)}
+              onChange={(e) => { setAttendantId(e.target.value); markDirty(); }}
               className="w-full px-3 py-2 rounded-lg border border-neutral-300 bg-white text-xs"
             >
               <option value="">-- Select Attendant --</option>
@@ -527,12 +565,12 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
 
       {/* SECTION 5: Bookings Section */}
       <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs">
-        <BookingsSection bookings={bookings} onChange={setBookings} />
+        <BookingsSection bookings={bookings} onChange={(b) => { setBookings(b); markDirty(); }} />
       </div>
 
       {/* SECTION 6: Other Expenses */}
       <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs">
-        <OtherExpensesSection expenses={otherExpenses} onChange={setOtherExpenses} />
+        <OtherExpensesSection expenses={otherExpenses} onChange={(e) => { setOtherExpenses(e); markDirty(); }} />
       </div>
 
       {/* SECTION 7: Notes & Summary */}
@@ -545,7 +583,7 @@ export function DailyEntryForm({ initialData, recordId }: DailyEntryFormProps) {
             rows={2}
             placeholder="e.g. Traffic delay at toll, tyre pressure check done..."
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) => { setNotes(e.target.value); markDirty(); }}
             className="w-full px-3 py-2 rounded-lg border border-neutral-300 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>

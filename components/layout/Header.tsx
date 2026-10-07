@@ -54,18 +54,6 @@ export function Header({ session, onMenuClick }: HeaderProps) {
 
       {/* Right actions */}
       <div className="flex items-center gap-2 ml-auto">
-        {/* Notifications */}
-        <button
-          className="relative p-2 rounded-lg text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
-          aria-label="View notifications"
-        >
-          <Bell className="w-5 h-5" />
-          {/* Unread dot */}
-          <span
-            className="absolute top-1.5 right-1.5 w-2 h-2 bg-warning-500 rounded-full border-2 border-white"
-            aria-label="You have unread notifications"
-          />
-        </button>
 
         {/* User menu */}
         <div className="relative">
