@@ -5,6 +5,7 @@ import { signOut } from 'next-auth/react';
 import { Menu, Bell, LogOut, ChevronDown, Search } from 'lucide-react';
 import { useState } from 'react';
 import type { Session } from 'next-auth';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface HeaderProps {
   session: Session;
@@ -54,6 +55,7 @@ export function Header({ session, onMenuClick }: HeaderProps) {
 
       {/* Right actions */}
       <div className="flex items-center gap-2 ml-auto">
+        <ThemeToggle />
 
         {/* User menu */}
         <div className="relative">
